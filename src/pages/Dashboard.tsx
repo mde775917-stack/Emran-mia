@@ -14,7 +14,7 @@ const Dashboard = () => {
     { label: 'Wallet Balance', value: `${profile.walletBalance} BDT`, icon: Wallet, color: 'bg-emerald-50 text-emerald-600' },
     { label: 'Video Earnings', value: `${profile.videoEarnings} BDT`, icon: PlayCircle, color: 'bg-blue-50 text-blue-600' },
     { label: 'Form Earnings', value: `${profile.formEarnings} BDT`, icon: FileText, color: 'bg-orange-50 text-orange-600' },
-    { label: 'Referral Bonus', value: `${profile.referralEarnings} BDT`, icon: Users, color: 'bg-purple-50 text-purple-600' },
+    { label: 'Total Earned', value: `${profile.videoEarnings + profile.formEarnings} BDT`, icon: TrendingUp, color: 'bg-purple-50 text-purple-600' },
   ];
 
   return (
@@ -89,17 +89,10 @@ const Dashboard = () => {
               {!profile.isActive && <span className="text-[10px] text-amber-600 font-bold mt-1">LOCKED</span>}
             </Card>
           </Link>
-          <Link to={profile.isActive ? "/shop" : "#"} className={!profile.isActive ? "opacity-50 cursor-not-allowed" : ""}>
+          <Link to={profile.isActive ? "/shop" : "#"} className={!profile.isActive ? "opacity-50 cursor-not-allowed" : "col-span-2"}>
             <Card className="flex flex-col items-center text-center p-4 hover:bg-emerald-50 transition-colors">
               <ShoppingBag className="text-emerald-600 mb-2" size={32} />
               <span className="font-semibold text-sm">Shop Now</span>
-              {!profile.isActive && <span className="text-[10px] text-amber-600 font-bold mt-1">LOCKED</span>}
-            </Card>
-          </Link>
-          <Link to={profile.isActive ? "/referral" : "#"} className={!profile.isActive ? "opacity-50 cursor-not-allowed" : ""}>
-            <Card className="flex flex-col items-center text-center p-4 hover:bg-emerald-50 transition-colors">
-              <Users className="text-emerald-600 mb-2" size={32} />
-              <span className="font-semibold text-sm">Refer Friends</span>
               {!profile.isActive && <span className="text-[10px] text-amber-600 font-bold mt-1">LOCKED</span>}
             </Card>
           </Link>

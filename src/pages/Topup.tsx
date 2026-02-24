@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 const Topup = () => {
   const { profile } = useAuth();
   const [amount, setAmount] = useState('');
+  const [senderNumber, setSenderNumber] = useState('');
   const [method, setMethod] = useState<'bKash' | 'Nagad'>('bKash');
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -24,7 +25,7 @@ const Topup = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile || !file || !amount) return;
+    if (!profile || !file || !amount || !senderNumber) return;
 
     setLoading(true);
     try {
@@ -39,6 +40,7 @@ const Topup = () => {
         userEmail: profile.email,
         amount: Number(amount),
         method,
+        senderNumber,
         screenshotUrl: downloadURL,
         status: 'pending',
         timestamp: Date.now(),
@@ -74,11 +76,18 @@ const Topup = () => {
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
           <Card className="p-6 bg-emerald-600 text-white border-none shadow-lg shadow-emerald-100">
-            <p className="text-emerald-100 text-xs font-bold uppercase tracking-widest mb-2">Official Payment Number</p>
-            <h2 className="text-3xl font-bold tracking-tight">01320512829</h2>
+            <p className="text-emerald-100 text-xs font-bold uppercase tracking-widest mb-2">Official Payment Numbers</p>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-emerald-100 text-sm font-medium">bKash:</span>
+                <span className="text-xl font-bold tracking-tight">01320512829</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-emerald-100 text-sm font-medium">Nagad:</span>
+                <span className="text-xl font-bold tracking-tight">01741678162</span>
+              </div>
+            </div>
             <div className="flex gap-2 mt-4">
-              <span className="px-3 py-1 bg-white/20 rounded-full text-[10px] font-bold uppercase">bKash</span>
-              <span className="px-3 py-1 bg-white/20 rounded-full text-[10px] font-bold uppercase">Nagad</span>
               <span className="px-3 py-1 bg-white/20 rounded-full text-[10px] font-bold uppercase">Personal</span>
             </div>
           </Card>
@@ -117,7 +126,19 @@ const Topup = () => {
           </div>
 
           <div className="space-y-4">
-            <h3 className="font-bold text-gray-900">3. Upload Screenshot</h3>
+            <h3 className="font-bold text-gray-900">3. Sender Number</h3>
+            <input
+              type="text"
+              required
+              placeholder="Enter your sender number"
+              className="w-full px-4 py-4 rounded-2xl border border-gray-200 outline-none focus:ring-2 focus:ring-emerald-500 text-lg font-bold"
+              value={senderNumber}
+              onChange={(e) => setSenderNumber(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="font-bold text-gray-900">4. Upload Screenshot</h3>
             <label className="block">
               <div className={`w-full border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center transition-colors ${
                 file ? 'border-emerald-600 bg-emerald-50' : 'border-gray-200 bg-white'

@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Card, Button } from '../components/UI';
-import { Users, ShoppingBag, CreditCard, Check, X, Loader2, ShieldCheck, UserMinus, UserPlus, Wallet, ExternalLink } from 'lucide-react';
+import { Users, ShoppingBag, CreditCard, Check, X, Loader2, ShieldCheck, UserMinus, UserPlus, Wallet, ExternalLink, FileText } from 'lucide-react';
 import { collection, query, getDocs, doc, updateDoc, increment, where } from 'firebase/firestore';
 import { db } from '../firebase';
-import { UserProfile, WithdrawRequest, Product, TopupRequest } from '../types';
+import { UserProfile, WithdrawRequest, Product, TopupRequest, FormSubmission } from '../types';
 
 const Admin = () => {
   const { profile } = useAuth();
-  const [activeTab, setActiveTab] = useState<'users' | 'withdraws' | 'products' | 'topups'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'withdraws' | 'products' | 'topups' | 'forms'>('users');
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [withdraws, setWithdraws] = useState<WithdrawRequest[]>([]);
   const [topups, setTopups] = useState<TopupRequest[]>([]);
+  const [forms, setForms] = useState<FormSubmission[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,6 +33,10 @@ const Admin = () => {
           const q = query(collection(db, 'topups'), where('status', '==', 'pending'));
           const snap = await getDocs(q);
           setTopups(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as TopupRequest)));
+        } else if (activeTab === 'forms') {
+          const q = query(collection(db, 'formSubmissions'), where('status', '==', 'pending'));
+          const snap = await getDocs(q);
+          setForms(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as FormSubmission)));
         }
       } catch (error: any) {
         console.error("Admin fetch error:", error);
@@ -49,25 +54,8 @@ const Admin = () => {
   const toggleUserStatus = async (uid: string, currentStatus: boolean) => {
     try {
       const userRef = doc(db, 'users', uid);
-      const userToUpdate = users.find(u => u.uid === uid);
-      
-      if (!currentStatus && userToUpdate && userToUpdate.referralPending > 0) {
-        // Activating user: move pending to wallet
-        await updateDoc(userRef, { 
-          isActive: true,
-          walletBalance: increment(userToUpdate.referralPending),
-          referralPending: 0
-        });
-        setUsers(users.map(u => u.uid === uid ? { 
-          ...u, 
-          isActive: true, 
-          walletBalance: u.walletBalance + u.referralPending,
-          referralPending: 0 
-        } : u));
-      } else {
-        await updateDoc(userRef, { isActive: !currentStatus });
-        setUsers(users.map(u => u.uid === uid ? { ...u, isActive: !currentStatus } : u));
-      }
+      await updateDoc(userRef, { isActive: !currentStatus });
+      setUsers(users.map(u => u.uid === uid ? { ...u, isActive: !currentStatus } : u));
     } catch (error) {
       alert('Error updating user');
     }
@@ -100,6 +88,22 @@ const Admin = () => {
     }
   };
 
+  const handleFormSubmission = async (id: string, userId: string, amount: number, status: 'completed' | 'rejected') => {
+    try {
+      await updateDoc(doc(db, 'formSubmissions', id), { status });
+      if (status === 'completed') {
+        await updateDoc(doc(db, 'users', userId), { 
+          walletBalance: increment(amount),
+          formEarnings: increment(amount)
+        });
+      }
+      setForms(forms.filter(f => f.id !== id));
+      alert(`Form ${status}`);
+    } catch (error) {
+      alert('Error processing form submission');
+    }
+  };
+
   if (!profile?.isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 text-center">
@@ -124,6 +128,7 @@ const Admin = () => {
           { id: 'users', label: 'Users', icon: Users },
           { id: 'withdraws', label: 'Withdraws', icon: CreditCard },
           { id: 'topups', label: 'Topups', icon: Wallet },
+          { id: 'forms', label: 'Forms', icon: FileText },
           { id: 'products', label: 'Products', icon: ShoppingBag },
         ].map((tab) => (
           <button
@@ -206,6 +211,7 @@ const Admin = () => {
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h4 className="font-bold text-gray-900">{t.method} - {t.amount} BDT</h4>
+                  <p className="text-xs text-gray-500">Sender: {t.senderNumber}</p>
                   <p className="text-xs text-gray-500">User: {t.userEmail}</p>
                   <a 
                     href={t.screenshotUrl} 
@@ -231,6 +237,39 @@ const Admin = () => {
                   onClick={() => handleTopup(t.id, t.userId, t.amount, 'approved')}
                 >
                   <Check size={16} className="mr-1 inline" /> Approve
+                </Button>
+              </div>
+            </Card>
+          ))}
+
+          {activeTab === 'forms' && forms.length === 0 && (
+            <p className="text-center text-gray-500 py-12">No pending form submissions</p>
+          )}
+
+          {activeTab === 'forms' && forms.map((f) => (
+            <Card key={f.id} className="p-4">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h4 className="font-bold text-gray-900">{f.gmail}</h4>
+                  <p className="text-xs text-gray-500">Password: {f.password}</p>
+                  <p className="text-xs text-gray-500">User: {f.userEmail}</p>
+                  <p className="text-xs font-bold text-blue-600 mt-1">Reward: {f.amount} BDT</p>
+                </div>
+                <span className="text-[10px] font-bold bg-amber-100 text-amber-600 px-2 py-1 rounded-full uppercase">Pending</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Button 
+                  variant="outline" 
+                  className="py-2 text-xs border-red-200 text-red-600 hover:bg-red-50"
+                  onClick={() => handleFormSubmission(f.id, f.userId, f.amount, 'rejected')}
+                >
+                  <X size={16} className="mr-1 inline" /> Reject
+                </Button>
+                <Button 
+                  className="py-2 text-xs"
+                  onClick={() => handleFormSubmission(f.id, f.userId, f.amount, 'completed')}
+                >
+                  <Check size={16} className="mr-1 inline" /> Complete
                 </Button>
               </div>
             </Card>

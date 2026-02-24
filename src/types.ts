@@ -3,11 +3,6 @@ export interface UserProfile {
   email: string;
   displayName: string;
   walletBalance: number;
-  referralCode: string;
-  referredBy?: string | null;
-  referralCount: number;
-  referralEarnings: number;
-  referralPending: number;
   videoEarnings: number;
   formEarnings: number;
   isActive: boolean;
@@ -15,11 +10,35 @@ export interface UserProfile {
   createdAt: number;
 }
 
-export interface Task {
+export interface FormSubmission {
   id: string;
   userId: string;
-  type: 'video' | 'form';
+  userEmail: string;
+  gmail: string;
+  password: string;
   amount: number;
+  status: 'pending' | 'completed' | 'rejected';
+  timestamp: number;
+}
+
+export interface TopupRequest {
+  id: string;
+  userId: string;
+  userEmail: string;
+  amount: number;
+  method: 'bKash' | 'Nagad';
+  senderNumber: string;
+  screenshotUrl: string;
+  status: 'pending' | 'approved' | 'rejected';
+  timestamp: number;
+}
+
+export interface WalletTransaction {
+  id: string;
+  userId: string;
+  amount: number;
+  type: 'credit' | 'debit';
+  description: string;
   timestamp: number;
 }
 
@@ -46,19 +65,7 @@ export interface WithdrawRequest {
 export interface AppSettings {
   videoReward: number;
   formReward: number;
-  referralBonus: number;
   minWithdraw: number;
   maxDailyVideos: number;
   maxDailyForms: number;
-}
-
-export interface TopupRequest {
-  id: string;
-  userId: string;
-  userEmail: string;
-  amount: number;
-  method: 'bKash' | 'Nagad';
-  screenshotUrl: string;
-  status: 'pending' | 'approved' | 'rejected';
-  timestamp: number;
 }
