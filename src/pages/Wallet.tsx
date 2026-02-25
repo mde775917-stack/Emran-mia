@@ -12,6 +12,7 @@ const WalletPage = () => {
   const [withdraws, setWithdraws] = useState<WithdrawRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [showWithdraw, setShowWithdraw] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   
   const [withdrawForm, setWithdrawForm] = useState({
     method: 'bKash' as 'bKash' | 'Nagad',
@@ -28,11 +29,12 @@ const WalletPage = () => {
       try {
         const q = query(
           collection(db, 'withdraws'),
-          where('userId', '==', profile.uid),
-          orderBy('timestamp', 'desc')
+          where('userId', '==', profile.uid)
         );
         const querySnapshot = await getDocs(q);
-        setWithdraws(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WithdrawRequest)));
+        const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WithdrawRequest));
+        data.sort((a, b) => b.timestamp - a.timestamp);
+        setWithdraws(data);
       } catch (error) {
         console.error(error);
       } finally {
@@ -67,16 +69,22 @@ const WalletPage = () => {
         timestamp: Date.now()
       });
 
-      // Deduct from wallet
-      await updateDoc(doc(db, 'users', profile.uid), {
-        walletBalance: increment(-withdrawForm.amount)
-      });
+      // Wallet balance must decrease only when status becomes "success" (handled by admin)
+      // So we don't deduct here anymore.
 
       await refreshProfile();
       setShowWithdraw(false);
-      alert('Withdraw request submitted successfully!');
+      alert('Withdraw request submitted successfully! Your balance will be deducted once approved.');
+      
       // Refresh list
-      window.location.reload(); 
+      const q = query(
+        collection(db, 'withdraws'),
+        where('userId', '==', profile.uid)
+      );
+      const querySnapshot = await getDocs(q);
+      const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WithdrawRequest));
+      data.sort((a, b) => b.timestamp - a.timestamp);
+      setWithdraws(data);
     } catch (error) {
       console.error(error);
     } finally {
@@ -97,61 +105,83 @@ const WalletPage = () => {
         <div className="relative z-10">
           <p className="text-emerald-100 text-xs font-medium uppercase tracking-wider mb-2">Available Balance</p>
           <p className="text-4xl font-bold mb-6">{profile.walletBalance} BDT</p>
-          <Button 
-            variant="secondary" 
-            className="w-full bg-white text-emerald-600 hover:bg-emerald-50"
-            onClick={() => setShowWithdraw(true)}
-          >
-            Withdraw Funds
-          </Button>
+          <div className="space-y-3">
+            <Button 
+              variant="secondary" 
+              className="w-full bg-white text-emerald-600 hover:bg-emerald-50"
+              onClick={() => setShowWithdraw(true)}
+            >
+              Withdraw Funds
+            </Button>
+            <Button 
+              variant="outline" 
+              className="w-full border-white/30 text-white hover:bg-white/10"
+              onClick={() => setShowHistory(true)}
+            >
+              Withdraw History
+            </Button>
+          </div>
         </div>
         <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-white/10 rounded-full" />
       </Card>
 
-      <div className="space-y-4">
-        <h3 className="text-lg font-bold text-gray-900">Withdraw History</h3>
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="animate-spin text-emerald-600" />
-          </div>
-        ) : withdraws.length === 0 ? (
-          <Card className="text-center py-12">
-            <Clock size={48} className="text-gray-200 mx-auto mb-4" />
-            <p className="text-gray-500">No withdraw history yet</p>
-          </Card>
-        ) : (
-          <div className="space-y-3">
-            {withdraws.map((req) => (
-              <Card key={req.id} className="p-4">
-                <div className="flex justify-between items-start">
-                  <div className="flex gap-3">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                      req.status === 'approved' ? 'bg-emerald-50 text-emerald-600' : 
-                      req.status === 'rejected' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'
-                    }`}>
-                      {req.status === 'approved' ? <CheckCircle2 size={20} /> : 
-                       req.status === 'rejected' ? <XCircle size={20} /> : <Clock size={20} />}
-                    </div>
-                    <div>
-                      <p className="font-semibold text-sm">{req.method} Withdraw</p>
-                      <p className="text-xs text-gray-500">{new Date(req.timestamp).toLocaleDateString()}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-gray-900">-{req.amount} BDT</p>
-                    <p className={`text-[10px] font-bold uppercase tracking-wider ${
-                      req.status === 'approved' ? 'text-emerald-600' : 
-                      req.status === 'rejected' ? 'text-red-600' : 'text-amber-600'
-                    }`}>
-                      {req.status}
-                    </p>
-                  </div>
+      {showHistory && (
+        <div className="fixed inset-0 bg-black/50 z-[110] flex items-end sm:items-center justify-center p-0 sm:p-6">
+          <motion.div 
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            className="bg-white w-full max-w-md h-[80vh] rounded-t-[32px] sm:rounded-[32px] flex flex-col"
+          >
+            <div className="p-8 border-b border-gray-100 flex justify-between items-center">
+              <h2 className="text-2xl font-bold">Withdraw History</h2>
+              <button onClick={() => setShowHistory(false)} className="text-gray-400">✕</button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {loading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="animate-spin text-emerald-600" />
                 </div>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
+              ) : withdraws.length === 0 ? (
+                <div className="text-center py-12">
+                  <Clock size={48} className="text-gray-200 mx-auto mb-4" />
+                  <p className="text-gray-500">No withdraw history yet</p>
+                </div>
+              ) : (
+                withdraws.map((req) => (
+                  <Card key={req.id} className="p-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex gap-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                          req.status === 'success' ? 'bg-emerald-50 text-emerald-600' : 
+                          req.status === 'rejected' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'
+                        }`}>
+                          {req.status === 'success' ? <CheckCircle2 size={20} /> : 
+                           req.status === 'rejected' ? <XCircle size={20} /> : <Clock size={20} />}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-sm">{req.method} Withdraw</p>
+                          <p className="text-xs text-gray-400">Acc: {req.number}</p>
+                          <p className="text-xs text-gray-500">{new Date(req.timestamp).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-gray-900">{req.amount} BDT</p>
+                        <p className={`text-[10px] font-bold uppercase tracking-wider ${
+                          req.status === 'success' ? 'text-emerald-600' : 
+                          req.status === 'rejected' ? 'text-red-600' : 'text-amber-600'
+                        }`}>
+                          {req.status}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                ))
+              )}
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {showWithdraw && (
         <div className="fixed inset-0 bg-black/50 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-6">

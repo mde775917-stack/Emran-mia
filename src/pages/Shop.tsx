@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Card, Button } from '../components/UI';
 import { ShoppingCart, Search, Filter, Loader2 } from 'lucide-react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Product } from '../types';
 
@@ -14,20 +14,10 @@ const Shop = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, 'products'));
+        const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+        const querySnapshot = await getDocs(q);
         const productsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
-        
-        // If no products, add some dummy ones for demo
-        if (productsData.length === 0) {
-          setProducts([
-            { id: '1', name: 'Classic Black T-Shirt', price: 450, description: 'Premium cotton black t-shirt', imageUrl: 'https://picsum.photos/seed/tshirt1/400/400', category: 'T-Shirt' },
-            { id: '2', name: 'White Minimalist Tee', price: 420, description: 'Clean white minimalist t-shirt', imageUrl: 'https://picsum.photos/seed/tshirt2/400/400', category: 'T-Shirt' },
-            { id: '3', name: 'Navy Blue Polo', price: 650, description: 'Elegant navy blue polo shirt', imageUrl: 'https://picsum.photos/seed/tshirt3/400/400', category: 'Polo' },
-            { id: '4', name: 'Graphic Print Tee', price: 480, description: 'Stylish graphic print t-shirt', imageUrl: 'https://picsum.photos/seed/tshirt4/400/400', category: 'T-Shirt' },
-          ]);
-        } else {
-          setProducts(productsData);
-        }
+        setProducts(productsData);
       } catch (error) {
         console.error(error);
       } finally {

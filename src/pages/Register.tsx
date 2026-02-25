@@ -28,12 +28,13 @@ const Register = () => {
         uid: user.uid,
         email: user.email!,
         displayName: name,
-        walletBalance: 0,
+        walletBalance: 200, // Welcome bonus
         videoEarnings: 0,
         formEarnings: 0,
         isActive: false, 
         isAdmin: false,
         createdAt: Date.now(),
+        welcomeBonusGiven: true,
       };
 
       await setDoc(doc(db, 'users', user.uid), profile);

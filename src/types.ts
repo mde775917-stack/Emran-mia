@@ -8,6 +8,7 @@ export interface UserProfile {
   isActive: boolean;
   isAdmin: boolean;
   createdAt: number;
+  welcomeBonusGiven?: boolean;
 }
 
 export interface FormSubmission {
@@ -28,9 +29,11 @@ export interface TopupRequest {
   amount: number;
   method: 'bKash' | 'Nagad';
   senderNumber: string;
-  screenshotUrl: string;
-  status: 'pending' | 'approved' | 'rejected';
-  timestamp: number;
+  transactionId: string;
+  screenshotUrl?: string;
+  status: 'pending' | 'success' | 'rejected';
+  createdAt: number;
+  timestamp?: number;
 }
 
 export interface WalletTransaction {
@@ -49,6 +52,7 @@ export interface Product {
   price: number;
   imageUrl: string;
   category: string;
+  createdAt: number;
 }
 
 export interface WithdrawRequest {
@@ -58,7 +62,7 @@ export interface WithdrawRequest {
   method: 'bKash' | 'Nagad';
   number: string;
   amount: number;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'success' | 'rejected';
   timestamp: number;
 }
 
