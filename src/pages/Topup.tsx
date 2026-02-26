@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'motion/react';
 
 const Topup = () => {
   const { profile } = useAuth();
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState('530');
   const [senderNumber, setSenderNumber] = useState('');
   const [transactionId, setTransactionId] = useState('');
   const [method, setMethod] = useState<'bKash' | 'Nagad'>('bKash');
@@ -82,7 +82,16 @@ const Topup = () => {
         </button>
       </header>
 
-      {completed ? (
+      {profile.isActive ? (
+        <Card className="text-center py-16 px-6">
+          <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle size={40} />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Account Active</h2>
+          <p className="text-gray-500 mb-8">Your account is already active. You can start earning now!</p>
+          <Button onClick={() => navigate('/dashboard')} className="w-full">Go to Dashboard</Button>
+        </Card>
+      ) : completed ? (
         <Card className="text-center py-12">
           <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle2 size={40} />
@@ -137,13 +146,14 @@ const Topup = () => {
               <input
                 type="number"
                 required
+                readOnly
                 placeholder="Enter amount in BDT"
-                className="w-full px-4 py-4 rounded-2xl border border-gray-200 outline-none focus:ring-2 focus:ring-emerald-500 text-lg font-bold"
+                className="w-full px-4 py-4 rounded-2xl border border-gray-100 outline-none bg-gray-50 text-gray-400 text-lg font-bold cursor-not-allowed"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 font-bold text-gray-400">BDT</span>
             </div>
+            <p className="text-xs text-emerald-600 font-bold">Fixed activation payment amount</p>
           </div>
 
           <div className="space-y-4">

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Card, Button } from '../components/UI';
 import { Users, ShoppingBag, CreditCard, Check, X, Loader2, ShieldCheck, UserMinus, UserPlus, Wallet, ExternalLink, FileText, Plus, Trash2, Edit2, Upload } from 'lucide-react';
-import { collection, query, getDocs, doc, updateDoc, increment, where, addDoc, deleteDoc, orderBy } from 'firebase/firestore';
+import { collection, query, getDocs, doc, updateDoc, increment, where, addDoc, deleteDoc, orderBy, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { UserProfile, WithdrawRequest, Product, TopupRequest, FormSubmission } from '../types';
@@ -121,11 +121,34 @@ const Admin = () => {
     try {
       await updateDoc(doc(db, 'topups', id), { status });
       if (status === 'success') {
-        await updateDoc(doc(db, 'users', userId), { walletBalance: increment(amount) });
+        const userSnap = await getDoc(doc(db, 'users', userId));
+        if (userSnap.exists()) {
+          const userData = userSnap.data() as UserProfile;
+          if (!userData.isActive) {
+            // Activation payment
+            await updateDoc(doc(db, 'users', userId), { 
+              isActive: true,
+              isInitiallyActivated: true 
+            });
+            
+            // Add transaction record
+            await addDoc(collection(db, 'walletTransactions'), {
+              userId,
+              amount,
+              type: 'debit',
+              description: 'Activation completed and 530 deducted as activation charge.',
+              timestamp: Date.now()
+            });
+          } else {
+            // Normal topup
+            await updateDoc(doc(db, 'users', userId), { walletBalance: increment(amount) });
+          }
+        }
       }
       setTopups(topups.filter(t => t.id !== id));
       alert(`Topup ${status}`);
     } catch (error) {
+      console.error(error);
       alert('Error processing topup');
     }
   };

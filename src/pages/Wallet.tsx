@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Card, Button } from '../components/UI';
-import { Wallet, ArrowDownCircle, ArrowUpCircle, Clock, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
-import { collection, query, where, getDocs, addDoc, doc, updateDoc, increment, orderBy } from 'firebase/firestore';
+import { Wallet, ArrowDownCircle, ArrowUpCircle, Clock, CheckCircle2, XCircle, Loader2, ReceiptText } from 'lucide-react';
+import { collection, query, where, getDocs, addDoc, doc, updateDoc, increment, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
-import { WithdrawRequest } from '../types';
+import { WithdrawRequest, WalletTransaction } from '../types';
 import { motion } from 'motion/react';
 
 const WalletPage = () => {
   const { profile, refreshProfile } = useAuth();
   const [withdraws, setWithdraws] = useState<WithdrawRequest[]>([]);
+  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showTransactions, setShowTransactions] = useState(false);
   
   const [withdrawForm, setWithdrawForm] = useState({
     method: 'bKash' as 'bKash' | 'Nagad',
@@ -42,6 +44,18 @@ const WalletPage = () => {
       }
     };
     fetchWithdraws();
+
+    const qTx = query(
+      collection(db, 'walletTransactions'),
+      where('userId', '==', profile.uid)
+    );
+    const unsubscribeTx = onSnapshot(qTx, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WalletTransaction));
+      data.sort((a, b) => b.timestamp - a.timestamp);
+      setTransactions(data);
+    });
+
+    return () => unsubscribeTx();
   }, [profile]);
 
   const handleWithdraw = async (e: React.FormEvent) => {
@@ -120,6 +134,13 @@ const WalletPage = () => {
             >
               Withdraw History
             </Button>
+            <Button 
+              variant="outline" 
+              className="w-full border-white/30 text-white hover:bg-white/10"
+              onClick={() => setShowTransactions(true)}
+            >
+              Transaction History
+            </Button>
           </div>
         </div>
         <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-white/10 rounded-full" />
@@ -172,6 +193,53 @@ const WalletPage = () => {
                           req.status === 'rejected' ? 'text-red-600' : 'text-amber-600'
                         }`}>
                           {req.status}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                ))
+              )}
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {showTransactions && (
+        <div className="fixed inset-0 bg-black/50 z-[110] flex items-end sm:items-center justify-center p-0 sm:p-6">
+          <motion.div 
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            className="bg-white w-full max-w-md h-[80vh] rounded-t-[32px] sm:rounded-[32px] flex flex-col"
+          >
+            <div className="p-8 border-b border-gray-100 flex justify-between items-center">
+              <h2 className="text-2xl font-bold">Transaction History</h2>
+              <button onClick={() => setShowTransactions(false)} className="text-gray-400">✕</button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {transactions.length === 0 ? (
+                <div className="text-center py-12">
+                  <ReceiptText size={48} className="text-gray-200 mx-auto mb-4" />
+                  <p className="text-gray-500">No transactions yet</p>
+                </div>
+              ) : (
+                transactions.map((tx) => (
+                  <Card key={tx.id} className="p-4">
+                    <div className="flex justify-between items-center">
+                      <div className="flex gap-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                          tx.type === 'credit' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'
+                        }`}>
+                          {tx.type === 'credit' ? <ArrowDownCircle size={20} /> : <ArrowUpCircle size={20} />}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-sm">{tx.description}</p>
+                          <p className="text-xs text-gray-500">{new Date(tx.timestamp).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className={`font-bold ${tx.type === 'credit' ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {tx.type === 'credit' ? '+' : '-'}{tx.amount} BDT
                         </p>
                       </div>
                     </div>
