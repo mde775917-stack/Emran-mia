@@ -128,7 +128,8 @@ const Admin = () => {
             // Activation payment
             await updateDoc(doc(db, 'users', userId), { 
               isActive: true,
-              isInitiallyActivated: true 
+              isInitiallyActivated: true,
+              walletBalance: 1
             });
             
             // Add transaction record
@@ -136,7 +137,7 @@ const Admin = () => {
               userId,
               amount,
               type: 'debit',
-              description: 'Activation completed and 530 deducted as activation charge.',
+              description: 'Activation completed and 530 deducted as activation charge. Balance reset to 1 BDT.',
               timestamp: Date.now()
             });
           } else {
