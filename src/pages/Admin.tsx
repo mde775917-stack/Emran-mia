@@ -74,22 +74,26 @@ const Admin = () => {
     try {
       const userRef = doc(db, 'users', uid);
       const newStatus = !currentStatus;
+      const user = users.find(u => u.uid === uid);
       
       const updates: any = { isActive: newStatus };
       
-      // If activating the user, reset balance to 1 BDT
-      if (newStatus === true) {
+      // If activating the user for the first time, reset balance to 1 BDT
+      if (newStatus === true && user && !user.isInitiallyActivated) {
         updates.walletBalance = 1;
+        updates.isInitiallyActivated = true;
       }
       
       await updateDoc(userRef, updates);
       
       setUsers(users.map(u => {
         if (u.uid === uid) {
+          const isFirstActivation = newStatus === true && !u.isInitiallyActivated;
           return { 
             ...u, 
             isActive: newStatus,
-            walletBalance: newStatus === true ? 1 : u.walletBalance 
+            walletBalance: isFirstActivation ? 1 : u.walletBalance,
+            isInitiallyActivated: isFirstActivation ? true : u.isInitiallyActivated
           };
         }
         return u;

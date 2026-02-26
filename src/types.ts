@@ -10,6 +10,7 @@ export interface UserProfile {
   createdAt: number;
   eeId: string;
   welcomeBonusGiven?: boolean;
+  isInitiallyActivated?: boolean;
 }
 
 export interface FormSubmission {

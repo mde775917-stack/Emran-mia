@@ -40,6 +40,7 @@ const Register = () => {
         isAdmin: false,
         createdAt: Date.now(),
         welcomeBonusGiven: true,
+        isInitiallyActivated: false,
       };
 
       await setDoc(doc(db, 'users', user.uid), profile);
