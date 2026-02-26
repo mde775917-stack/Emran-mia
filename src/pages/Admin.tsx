@@ -73,8 +73,27 @@ const Admin = () => {
   const toggleUserStatus = async (uid: string, currentStatus: boolean) => {
     try {
       const userRef = doc(db, 'users', uid);
-      await updateDoc(userRef, { isActive: !currentStatus });
-      setUsers(users.map(u => u.uid === uid ? { ...u, isActive: !currentStatus } : u));
+      const newStatus = !currentStatus;
+      
+      const updates: any = { isActive: newStatus };
+      
+      // If activating the user, reset balance to 1 BDT
+      if (newStatus === true) {
+        updates.walletBalance = 1;
+      }
+      
+      await updateDoc(userRef, updates);
+      
+      setUsers(users.map(u => {
+        if (u.uid === uid) {
+          return { 
+            ...u, 
+            isActive: newStatus,
+            walletBalance: newStatus === true ? 1 : u.walletBalance 
+          };
+        }
+        return u;
+      }));
     } catch (error) {
       alert('Error updating user');
     }
