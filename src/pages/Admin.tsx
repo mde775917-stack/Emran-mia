@@ -154,11 +154,11 @@ const Admin = () => {
     }
   };
 
-  const handleFormSubmission = async (id: string, userId: string, amount: number, status: 'completed' | 'rejected') => {
+  const handleFormSubmission = async (id: string, uid: string, amount: number, status: 'completed' | 'rejected') => {
     try {
       await updateDoc(doc(db, 'formSubmissions', id), { status });
       if (status === 'completed') {
-        await updateDoc(doc(db, 'users', userId), { 
+        await updateDoc(doc(db, 'users', uid), { 
           walletBalance: increment(amount),
           formEarnings: increment(amount)
         });
@@ -423,8 +423,8 @@ const Admin = () => {
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h4 className="font-bold text-gray-900">{f.gmail}</h4>
-                      <p className="text-xs text-gray-500">Password: {f.password}</p>
-                      <p className="text-xs text-gray-500">User: {f.userEmail}</p>
+                      <p className="text-xs text-gray-500">User ID: {f.userId}</p>
+                      <p className="text-xs text-gray-500">Submitter: {f.userEmail}</p>
                       <p className="text-xs font-bold text-blue-600 mt-1">Reward: {f.amount} BDT</p>
                     </div>
                     <span className="text-[10px] font-bold bg-amber-100 text-amber-600 px-2 py-1 rounded-full uppercase">Pending</span>
@@ -433,13 +433,13 @@ const Admin = () => {
                     <Button 
                       variant="outline" 
                       className="py-2 text-xs border-red-200 text-red-600 hover:bg-red-50"
-                      onClick={() => handleFormSubmission(f.id, f.userId, f.amount, 'rejected')}
+                      onClick={() => handleFormSubmission(f.id, f.uid, f.amount, 'rejected')}
                     >
                       <X size={16} className="mr-1 inline" /> Reject
                     </Button>
                     <Button 
                       className="py-2 text-xs"
-                      onClick={() => handleFormSubmission(f.id, f.userId, f.amount, 'completed')}
+                      onClick={() => handleFormSubmission(f.id, f.uid, f.amount, 'completed')}
                     >
                       <Check size={16} className="mr-1 inline" /> Complete
                     </Button>

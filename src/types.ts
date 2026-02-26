@@ -15,10 +15,10 @@ export interface UserProfile {
 
 export interface FormSubmission {
   id: string;
-  userId: string;
+  uid: string;
   userEmail: string;
   gmail: string;
-  password: string;
+  userId: string;
   amount: number;
   status: 'pending' | 'completed' | 'rejected';
   timestamp: number;

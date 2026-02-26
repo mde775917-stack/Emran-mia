@@ -14,7 +14,7 @@ const FormFill = () => {
   
   const [formData, setFormData] = useState({
     gmail: '',
-    password: ''
+    userId: ''
   });
 
   const REWARD = 150;
@@ -26,10 +26,10 @@ const FormFill = () => {
     setLoading(true);
     try {
       await addDoc(collection(db, 'formSubmissions'), {
-        userId: profile.uid,
+        uid: profile.uid,
         userEmail: profile.email,
         gmail: formData.gmail,
-        password: formData.password,
+        userId: formData.userId,
         amount: REWARD,
         status: 'pending',
         timestamp: Date.now()
@@ -37,7 +37,7 @@ const FormFill = () => {
 
       setCompleted(true);
       setShowForm(false);
-      setFormData({ gmail: '', password: '' });
+      setFormData({ gmail: '', userId: '' });
     } catch (error) {
       console.error(error);
       alert('Failed to submit form');
@@ -112,14 +112,14 @@ const FormFill = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">User ID</label>
                   <input
                     type="text"
                     required
-                    placeholder="Enter password"
+                    placeholder="Enter User ID"
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-500"
-                    value={formData.password}
-                    onChange={e => setFormData({...formData, password: e.target.value})}
+                    value={formData.userId}
+                    onChange={e => setFormData({...formData, userId: e.target.value})}
                   />
                 </div>
 
