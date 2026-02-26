@@ -93,7 +93,19 @@ const Tasks = () => {
         <p className="text-gray-500 text-sm">Watch ads and earn BDT</p>
       </header>
 
-      <Card className="mb-6">
+      <Card className="py-16 px-6 text-center flex flex-col items-center justify-center">
+        <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-6">
+          <PlayCircle size={40} />
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Coming Soon</h2>
+        <p className="text-gray-500 max-w-[240px] mx-auto">
+          Video earning will be available soon. Stay tuned for updates!
+        </p>
+      </Card>
+
+      {/* Existing logic hidden for future activation */}
+      <div className="hidden">
+        <Card className="mb-6">
         <div className="flex justify-between items-center mb-4">
           <div>
             <p className="text-sm text-gray-500 font-medium">Daily Progress</p>
@@ -203,6 +215,7 @@ const Tasks = () => {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 };

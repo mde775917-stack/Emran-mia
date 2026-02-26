@@ -20,7 +20,7 @@ const Profile = () => {
   const menuItems = [
     { icon: Settings, label: 'Account Settings', path: '/settings' },
     { icon: Bell, label: 'Notifications', path: '/notifications' },
-    { icon: HelpCircle, label: 'Help & Support', path: '/support' },
+    // { icon: HelpCircle, label: 'Help & Support', path: '/support' },
   ];
 
   return (

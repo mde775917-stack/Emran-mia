@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import BottomNav from './components/BottomNav';
+import WhatsAppButton from './components/WhatsAppButton';
 
 // Pages
 import Home from './pages/Home';
@@ -43,6 +44,7 @@ const AppContent = () => {
       </Routes>
       
       {user && <BottomNav />}
+      {/* <WhatsAppButton /> */}
     </div>
   );
 };
