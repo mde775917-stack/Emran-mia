@@ -34,7 +34,8 @@ const Profile = () => {
           {profile.displayName?.[0] || '?'}
         </div>
         <h2 className="text-xl font-bold text-gray-900">{profile.displayName}</h2>
-        <p className="text-gray-500 text-sm mb-4">{profile.email}</p>
+        <p className="text-gray-500 text-sm">{profile.email}</p>
+        <p className="text-emerald-600 text-xs font-bold mt-1 mb-4">User ID: {profile.eeId || 'N/A'}</p>
         <div className="flex gap-2">
           {profile.isAdmin && (
             <span className="px-3 py-1 bg-red-100 text-red-600 rounded-full text-[10px] font-bold uppercase tracking-wider">Admin</span>

@@ -17,6 +17,7 @@ const Admin = () => {
   const [forms, setForms] = useState<FormSubmission[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   const [showProductModal, setShowProductModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [productForm, setProductForm] = useState({
@@ -200,6 +201,11 @@ const Admin = () => {
     );
   }
 
+  const handleTabChange = (tab: any) => {
+    setActiveTab(tab);
+    setSearchQuery('');
+  };
+
   return (
     <div className="pb-24 pt-6 px-6 bg-gray-50 min-h-screen">
       <header className="mb-8">
@@ -217,7 +223,7 @@ const Admin = () => {
         ].map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
+            onClick={() => handleTabChange(tab.id as any)}
             className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-semibold transition-all whitespace-nowrap ${
               activeTab === tab.id ? 'bg-emerald-600 text-white' : 'bg-white text-gray-600 border border-gray-100'
             }`}
@@ -235,29 +241,51 @@ const Admin = () => {
       ) : (
         <div className="space-y-4">
           {activeTab === 'users' && (
-            users.length === 0 ? (
-              <p className="text-center text-gray-500 py-12">No users found</p>
-            ) : (
-              users.map((u) => (
-                <Card key={u.uid} className="p-4">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h4 className="font-bold text-gray-900">{u.displayName}</h4>
-                      <p className="text-xs text-gray-500">{u.email}</p>
-                      <p className="text-xs font-bold text-emerald-600 mt-1">Wallet: {u.walletBalance} BDT</p>
-                    </div>
-                    <Button 
-                      variant={u.isActive ? 'outline' : 'primary'} 
-                      className="py-2 px-4 text-xs"
-                      onClick={() => toggleUserStatus(u.uid, u.isActive)}
-                    >
-                      {u.isActive ? <UserMinus size={16} className="mr-1 inline" /> : <UserPlus size={16} className="mr-1 inline" />}
-                      {u.isActive ? 'Deactivate' : 'Activate'}
-                    </Button>
-                  </div>
-                </Card>
-              ))
-            )
+            <div className="space-y-4">
+              <div className="relative mb-4">
+                <input
+                  type="text"
+                  placeholder="Search by User ID (e.g. ES-123456)"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-emerald-500 bg-white shadow-sm"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              {users.filter(u => 
+                u.eeId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                u.displayName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                u.email?.toLowerCase().includes(searchQuery.toLowerCase())
+              ).length === 0 ? (
+                <p className="text-center text-gray-500 py-12">No users found</p>
+              ) : (
+                users
+                  .filter(u => 
+                    u.eeId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    u.displayName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    u.email?.toLowerCase().includes(searchQuery.toLowerCase())
+                  )
+                  .map((u) => (
+                    <Card key={u.uid} className="p-4">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h4 className="font-bold text-gray-900">{u.displayName}</h4>
+                          <p className="text-xs text-gray-500">{u.email}</p>
+                          <p className="text-[10px] font-bold text-emerald-600 mt-1 uppercase tracking-wider">ID: {u.eeId || 'N/A'}</p>
+                          <p className="text-[10px] font-bold text-gray-400">Wallet: {u.walletBalance} BDT</p>
+                        </div>
+                        <Button 
+                          variant={u.isActive ? 'outline' : 'primary'} 
+                          className="py-2 px-4 text-xs"
+                          onClick={() => toggleUserStatus(u.uid, u.isActive)}
+                        >
+                          {u.isActive ? <UserMinus size={16} className="mr-1 inline" /> : <UserPlus size={16} className="mr-1 inline" />}
+                          {u.isActive ? 'Deactivate' : 'Activate'}
+                        </Button>
+                      </div>
+                    </Card>
+                  ))
+              )}
+            </div>
           )}
 
           {activeTab === 'withdraws' && (

@@ -8,6 +8,7 @@ export interface UserProfile {
   isActive: boolean;
   isAdmin: boolean;
   createdAt: number;
+  eeId: string;
   welcomeBonusGiven?: boolean;
 }
 

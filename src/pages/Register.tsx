@@ -24,10 +24,15 @@ const Register = () => {
       const user = userCredential.user;
       await updateProfile(user, { displayName: name });
 
+      // Generate unique User ID: ES-XXXXXX
+      const randomId = Math.floor(100000 + Math.random() * 900000);
+      const eeId = `ES-${randomId}`;
+
       const profile: UserProfile = {
         uid: user.uid,
         email: user.email!,
         displayName: name,
+        eeId,
         walletBalance: 200, // Welcome bonus
         videoEarnings: 0,
         formEarnings: 0,

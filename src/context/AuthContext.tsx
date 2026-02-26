@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { UserProfile } from '../types';
 
@@ -30,9 +30,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (user) {
-        unsubscribeProfile = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
+        unsubscribeProfile = onSnapshot(doc(db, 'users', user.uid), async (docSnap) => {
           if (docSnap.exists()) {
-            setProfile(docSnap.data() as UserProfile);
+            const data = docSnap.data() as UserProfile;
+            setProfile(data);
+
+            // Auto-generate User ID if missing
+            if (!data.eeId) {
+              const randomId = Math.floor(100000 + Math.random() * 900000);
+              const newEeId = `ES-${randomId}`;
+              try {
+                await updateDoc(doc(db, 'users', user.uid), { eeId: newEeId });
+              } catch (err) {
+                console.error("Error auto-generating User ID:", err);
+              }
+            }
           }
           setLoading(false);
         }, (error) => {
