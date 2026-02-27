@@ -6,16 +6,19 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-interface CardProps {
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
   title?: string;
   subtitle?: string;
 }
 
-export const Card: React.FC<CardProps> = ({ children, className, title, subtitle }) => {
+export const Card: React.FC<CardProps> = ({ children, className, title, subtitle, ...props }) => {
   return (
-    <div className={cn("bg-white rounded-3xl p-6 shadow-sm border border-gray-50", className)}>
+    <div 
+      className={cn("bg-white rounded-3xl p-6 shadow-sm border border-gray-50", className)}
+      {...props}
+    >
       {title && (
         <div className="mb-4">
           <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
