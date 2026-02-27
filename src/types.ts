@@ -75,3 +75,14 @@ export interface AppSettings {
   maxDailyVideos: number;
   maxDailyForms: number;
 }
+
+export interface RechargeRequest {
+  id: string;
+  userId: string;
+  userEmail: string;
+  mobileNumber: string;
+  amount: number;
+  bonus: number;
+  status: 'pending' | 'success' | 'rejected';
+  createdAt: number;
+}

@@ -16,6 +16,7 @@ import Wallet from './pages/Wallet';
 import Profile from './pages/Profile';
 import Admin from './pages/Admin';
 import Topup from './pages/Topup';
+import Recharge from './pages/Recharge';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -41,6 +42,7 @@ const AppContent = () => {
         <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
         <Route path="/admin" element={<PrivateRoute><Admin /></PrivateRoute>} />
         <Route path="/topup" element={<PrivateRoute><Topup /></PrivateRoute>} />
+        <Route path="/recharge" element={<PrivateRoute><Recharge /></PrivateRoute>} />
       </Routes>
       
       {user && <BottomNav />}

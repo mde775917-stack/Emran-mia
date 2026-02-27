@@ -1,20 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Card, Button } from '../components/UI';
-import { Users, ShoppingBag, CreditCard, Check, X, Loader2, ShieldCheck, UserMinus, UserPlus, Wallet, ExternalLink, FileText, Plus, Trash2, Edit2, Upload } from 'lucide-react';
+import { Users, ShoppingBag, CreditCard, Check, X, Loader2, ShieldCheck, UserMinus, UserPlus, Wallet, ExternalLink, FileText, Plus, Trash2, Edit2, Upload, Smartphone } from 'lucide-react';
 import { collection, query, getDocs, doc, updateDoc, increment, where, addDoc, deleteDoc, orderBy, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
-import { UserProfile, WithdrawRequest, Product, TopupRequest, FormSubmission } from '../types';
+import { UserProfile, WithdrawRequest, Product, TopupRequest, FormSubmission, RechargeRequest } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 
 const Admin = () => {
   const { profile } = useAuth();
-  const [activeTab, setActiveTab] = useState<'users' | 'withdraws' | 'products' | 'topups' | 'forms'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'withdraws' | 'products' | 'topups' | 'forms' | 'recharges'>('users');
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [withdraws, setWithdraws] = useState<WithdrawRequest[]>([]);
   const [topups, setTopups] = useState<TopupRequest[]>([]);
   const [forms, setForms] = useState<FormSubmission[]>([]);
+  const [recharges, setRecharges] = useState<RechargeRequest[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -52,6 +53,10 @@ const Admin = () => {
           const q = query(collection(db, 'formSubmissions'), where('status', '==', 'pending'));
           const snap = await getDocs(q);
           setForms(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as FormSubmission)));
+        } else if (activeTab === 'recharges') {
+          const q = query(collection(db, 'recharges'), where('status', '==', 'pending'));
+          const snap = await getDocs(q);
+          setRecharges(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as RechargeRequest)));
         } else if (activeTab === 'products') {
           const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
           const snap = await getDocs(q);
@@ -170,6 +175,52 @@ const Admin = () => {
     }
   };
 
+  const handleRecharge = async (id: string, userId: string, amount: number, bonus: number, status: 'success' | 'rejected') => {
+    try {
+      if (status === 'success') {
+        const userRef = doc(db, 'users', userId);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          const userData = userSnap.data() as UserProfile;
+          if (userData.walletBalance < amount) {
+            alert('User has insufficient balance for this recharge');
+            return;
+          }
+          // Deduct amount and add bonus
+          await updateDoc(userRef, { 
+            walletBalance: increment(-amount + bonus) 
+          });
+          
+          // Add transaction record
+          await addDoc(collection(db, 'walletTransactions'), {
+            userId,
+            amount: amount,
+            type: 'debit',
+            description: `Mobile Recharge to ${recharges.find(r => r.id === id)?.mobileNumber}`,
+            timestamp: Date.now()
+          });
+
+          if (bonus > 0) {
+            await addDoc(collection(db, 'walletTransactions'), {
+              userId,
+              amount: bonus,
+              type: 'credit',
+              description: `Recharge Bonus for ${amount} BDT recharge`,
+              timestamp: Date.now()
+            });
+          }
+        }
+      }
+      
+      await updateDoc(doc(db, 'recharges', id), { status });
+      setRecharges(recharges.filter(r => r.id !== id));
+      alert(`Recharge ${status}`);
+    } catch (error) {
+      console.error(error);
+      alert('Error processing recharge');
+    }
+  };
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -266,6 +317,7 @@ const Admin = () => {
           { id: 'withdraws', label: 'Withdraws', icon: CreditCard },
           { id: 'topups', label: 'Topups', icon: Wallet },
           { id: 'forms', label: 'Forms', icon: FileText },
+          { id: 'recharges', label: 'Recharges', icon: Smartphone },
           { id: 'products', label: 'Products', icon: ShoppingBag },
         ].map((tab) => (
           <button
@@ -442,6 +494,41 @@ const Admin = () => {
                       onClick={() => handleFormSubmission(f.id, f.uid, f.amount, 'completed')}
                     >
                       <Check size={16} className="mr-1 inline" /> Complete
+                    </Button>
+                  </div>
+                </Card>
+              ))
+            )
+          )}
+
+          {activeTab === 'recharges' && (
+            recharges.length === 0 ? (
+              <p className="text-center text-gray-500 py-12">No pending recharge requests</p>
+            ) : (
+              recharges.map((r) => (
+                <Card key={r.id} className="p-4">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h4 className="font-bold text-gray-900">{r.mobileNumber}</h4>
+                      <p className="text-xs text-gray-500">Amount: {r.amount} BDT</p>
+                      <p className="text-xs text-emerald-600 font-bold">Bonus: {r.bonus} BDT</p>
+                      <p className="text-xs text-gray-500">User: {r.userEmail}</p>
+                    </div>
+                    <span className="text-[10px] font-bold bg-amber-100 text-amber-600 px-2 py-1 rounded-full uppercase">Pending</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button 
+                      variant="outline" 
+                      className="py-2 text-xs border-red-200 text-red-600 hover:bg-red-50"
+                      onClick={() => handleRecharge(r.id, r.userId, r.amount, r.bonus, 'rejected')}
+                    >
+                      <X size={16} className="mr-1 inline" /> Reject
+                    </Button>
+                    <Button 
+                      className="py-2 text-xs"
+                      onClick={() => handleRecharge(r.id, r.userId, r.amount, r.bonus, 'success')}
+                    >
+                      <Check size={16} className="mr-1 inline" /> Success
                     </Button>
                   </div>
                 </Card>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Card, Button } from '../components/UI';
-import { Wallet, TrendingUp, Users, PlayCircle, FileText, ShoppingBag, ArrowUpRight } from 'lucide-react';
+import { Wallet, TrendingUp, Users, PlayCircle, FileText, ShoppingBag, ArrowUpRight, Smartphone } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 
@@ -89,10 +89,17 @@ const Dashboard = () => {
               {!profile.isActive && <span className="text-[10px] text-amber-600 font-bold mt-1">LOCKED</span>}
             </Card>
           </Link>
-          <Link to={profile.isActive ? "/shop" : "#"} className={!profile.isActive ? "opacity-50 cursor-not-allowed" : "col-span-2"}>
+          <Link to={profile.isActive ? "/shop" : "#"} className={!profile.isActive ? "opacity-50 cursor-not-allowed" : ""}>
             <Card className="flex flex-col items-center text-center p-4 hover:bg-emerald-50 transition-colors">
               <ShoppingBag className="text-emerald-600 mb-2" size={32} />
               <span className="font-semibold text-sm">Shop Now</span>
+              {!profile.isActive && <span className="text-[10px] text-amber-600 font-bold mt-1">LOCKED</span>}
+            </Card>
+          </Link>
+          <Link to={profile.isActive ? "/recharge" : "#"} className={!profile.isActive ? "opacity-50 cursor-not-allowed" : ""}>
+            <Card className="flex flex-col items-center text-center p-4 hover:bg-emerald-50 transition-colors">
+              <Smartphone className="text-emerald-600 mb-2" size={32} />
+              <span className="font-semibold text-sm">Recharge</span>
               {!profile.isActive && <span className="text-[10px] text-amber-600 font-bold mt-1">LOCKED</span>}
             </Card>
           </Link>
