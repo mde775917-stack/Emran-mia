@@ -11,6 +11,7 @@ const Profile = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const [showReferModal, setShowReferModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const [copied, setCopied] = useState(false);
 
   if (!profile) return null;
@@ -71,6 +72,12 @@ const Profile = () => {
             {profile.isActive ? 'Active' : 'Pending Activation'}
           </span>
         </div>
+        <button 
+          onClick={() => setShowTermsModal(true)}
+          className="mt-4 text-[10px] text-gray-400 hover:text-gray-600 transition-colors underline underline-offset-2"
+        >
+          Terms & Conditions
+        </button>
       </Card>
 
       <Card 
@@ -167,6 +174,90 @@ const Profile = () => {
                 </Button>
                 <Button variant="outline" onClick={() => setShowReferModal(false)} className="w-full py-4">
                   Close
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showTermsModal && (
+          <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-6">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white w-full max-w-md rounded-[32px] flex flex-col max-h-[80vh] shadow-2xl"
+            >
+              <div className="p-6 border-b border-gray-50 flex justify-between items-center shrink-0">
+                <h2 className="text-xl font-bold text-gray-900">Terms & Conditions</h2>
+                <button 
+                  onClick={() => setShowTermsModal(false)}
+                  className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="p-6 overflow-y-auto custom-scrollbar">
+                <div className="space-y-6 text-sm text-gray-600 leading-relaxed">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">EarnEase – Terms & Conditions</h3>
+                    <p>EarnEase is an online platform where users can earn by completing tasks, use mobile services, and access various digital features. By using this platform, users agree to the following terms and conditions.</p>
+                  </div>
+
+                  <section>
+                    <h4 className="font-bold text-gray-900 mb-1">Account Registration</h4>
+                    <p>Users must provide accurate information. False information may result in account suspension.</p>
+                  </section>
+
+                  <section>
+                    <h4 className="font-bold text-gray-900 mb-1">Account Activation</h4>
+                    <p>Some features require activation. After activation, users can access full features.</p>
+                  </section>
+
+                  <section>
+                    <h4 className="font-bold text-gray-900 mb-1">Earnings & Rewards</h4>
+                    <p>Rewards are added after admin verification.</p>
+                  </section>
+
+                  <section>
+                    <h4 className="font-bold text-gray-900 mb-1">Top-up, Recharge & Payments</h4>
+                    <p>All payment requests remain pending until admin approval.</p>
+                  </section>
+
+                  <section>
+                    <h4 className="font-bold text-gray-900 mb-1">Withdrawal Policy</h4>
+                    <p>Users can withdraw after reaching minimum balance. Incorrect info may cancel payment.</p>
+                  </section>
+
+                  <section>
+                    <h4 className="font-bold text-gray-900 mb-1">Account Security</h4>
+                    <p>Users must keep passwords safe. The platform is not responsible for shared accounts.</p>
+                  </section>
+
+                  <section>
+                    <h4 className="font-bold text-gray-900 mb-1">Violations</h4>
+                    <p>Fraud, spam, fake data or misuse may lead to suspension.</p>
+                  </section>
+
+                  <section>
+                    <h4 className="font-bold text-gray-900 mb-1">Support</h4>
+                    <p>If users face issues, they can contact support for resolution.</p>
+                  </section>
+
+                  <div className="pt-4 border-t border-gray-50">
+                    <h4 className="font-bold text-gray-900 mb-2">Disclaimer Section</h4>
+                    <p className="mb-2 italic">EarnEase is an independent online earning platform. It is not an official service of any government, bank, or major technology company.</p>
+                    <p>All rewards and payments depend on platform rules, verification, and admin approval.</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-6 border-t border-gray-50 shrink-0">
+                <Button onClick={() => setShowTermsModal(false)} className="w-full">
+                  I Understand
                 </Button>
               </div>
             </motion.div>
