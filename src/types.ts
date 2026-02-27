@@ -86,3 +86,14 @@ export interface RechargeRequest {
   status: 'pending' | 'success' | 'rejected';
   createdAt: number;
 }
+
+export interface GmailSaleRequest {
+  id: string;
+  userId: string;
+  userEmail: string;
+  gmail: string;
+  password: string;
+  reward: number;
+  status: 'pending' | 'success' | 'rejected';
+  createdAt: number;
+}
