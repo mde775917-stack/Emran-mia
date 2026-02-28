@@ -33,6 +33,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         unsubscribeProfile = onSnapshot(doc(db, 'users', user.uid), async (docSnap) => {
           if (docSnap.exists()) {
             const data = docSnap.data() as UserProfile;
+            
+            // Migration: Ensure role exists
+            if (!data.role) {
+              const defaultRole = data.isAdmin ? 'admin' : 'user';
+              try {
+                await updateDoc(doc(db, 'users', user.uid), { role: defaultRole });
+              } catch (err) {
+                console.error("Error updating role:", err);
+              }
+            }
+            
             setProfile(data);
 
             // Auto-generate User ID if missing

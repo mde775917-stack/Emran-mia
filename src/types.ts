@@ -7,10 +7,20 @@ export interface UserProfile {
   formEarnings: number;
   isActive: boolean;
   isAdmin: boolean;
+  role: 'user' | 'admin' | 'superadmin';
   createdAt: number;
   eeId: string;
   welcomeBonusGiven?: boolean;
   isInitiallyActivated?: boolean;
+}
+
+export interface ActivationLog {
+  id: string;
+  adminId: string;
+  adminEmail: string;
+  activatedUserId: string;
+  activatedUserEmail: string;
+  timestamp: number;
 }
 
 export interface FormSubmission {

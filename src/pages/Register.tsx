@@ -46,6 +46,7 @@ const Register = () => {
         formEarnings: 0,
         isActive: false, 
         isAdmin: false,
+        role: 'user',
         createdAt: Date.now(),
         welcomeBonusGiven: true,
         isInitiallyActivated: false,

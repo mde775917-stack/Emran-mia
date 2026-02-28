@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Card, Button } from '../components/UI';
-import { User, Mail, Shield, LogOut, ChevronRight, Settings, HelpCircle, Bell, Share2, Copy, Check, X } from 'lucide-react';
+import { User, Mail, Shield, LogOut, ChevronRight, Settings, HelpCircle, Bell, Share2, Copy, Check, X, ShieldAlert } from 'lucide-react';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 import { useNavigate, Link } from 'react-router-dom';
@@ -121,6 +121,20 @@ const Profile = () => {
                 <span className="font-semibold text-sm text-red-600">Admin Dashboard</span>
               </div>
               <ChevronRight size={18} className="text-red-400" />
+            </Card>
+          </Link>
+        )}
+
+        {profile.eeId === 'ES-556378' && (
+          <Link to="/ceo-panel">
+            <Card className="p-4 flex justify-between items-center hover:bg-blue-50 transition-colors cursor-pointer border-blue-100 mt-4">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                  <ShieldAlert size={20} />
+                </div>
+                <span className="font-semibold text-sm text-blue-600">CEO Panel</span>
+              </div>
+              <ChevronRight size={18} className="text-blue-400" />
             </Card>
           </Link>
         )}

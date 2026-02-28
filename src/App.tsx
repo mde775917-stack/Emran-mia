@@ -18,6 +18,7 @@ import Admin from './pages/Admin';
 import Topup from './pages/Topup';
 import Recharge from './pages/Recharge';
 import SellGmail from './pages/SellGmail';
+import CEOPanel from './pages/CEOPanel';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -45,6 +46,7 @@ const AppContent = () => {
         <Route path="/topup" element={<PrivateRoute><Topup /></PrivateRoute>} />
         <Route path="/recharge" element={<PrivateRoute><Recharge /></PrivateRoute>} />
         <Route path="/sell-gmail" element={<PrivateRoute><SellGmail /></PrivateRoute>} />
+        <Route path="/ceo-panel" element={<PrivateRoute><CEOPanel /></PrivateRoute>} />
       </Routes>
       
       {user && <BottomNav />}

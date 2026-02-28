@@ -33,7 +33,7 @@ const Admin = () => {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!profile?.isAdmin) return;
+    if (profile?.role !== 'admin' && profile?.role !== 'superadmin' && !profile?.isAdmin) return;
 
     const fetchData = async () => {
       setLoading(true);
@@ -95,6 +95,17 @@ const Admin = () => {
       }
       
       await updateDoc(userRef, updates);
+
+      // Log activation if status changed to true
+      if (newStatus === true && profile) {
+        await addDoc(collection(db, 'activationLogs'), {
+          adminId: profile.uid,
+          adminEmail: profile.email,
+          activatedUserId: uid,
+          activatedUserEmail: user?.email || 'Unknown',
+          timestamp: Date.now()
+        });
+      }
       
       setUsers(users.map(u => {
         if (u.uid === uid) {
@@ -141,6 +152,17 @@ const Admin = () => {
               isInitiallyActivated: true,
               walletBalance: 1
             });
+
+            // Log activation
+            if (profile) {
+              await addDoc(collection(db, 'activationLogs'), {
+                adminId: profile.uid,
+                adminEmail: profile.email,
+                activatedUserId: userId,
+                activatedUserEmail: userData.email,
+                timestamp: Date.now()
+              });
+            }
             
             // Add transaction record
             await addDoc(collection(db, 'walletTransactions'), {
@@ -319,7 +341,7 @@ const Admin = () => {
     setShowProductModal(true);
   };
 
-  if (!profile?.isAdmin) {
+  if (profile?.role !== 'admin' && profile?.role !== 'superadmin' && !profile?.isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 text-center">
         <div>
