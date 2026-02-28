@@ -23,6 +23,17 @@ export interface ActivationLog {
   timestamp: number;
 }
 
+export interface AdminLog {
+  id: string;
+  adminId: string;
+  adminName: string;
+  actionType: 'withdraw_success' | 'withdraw_rejected' | 'topup_success' | 'topup_rejected' | 'activation_success' | 'recharge_success' | 'recharge_rejected' | 'gmail_sale_success' | 'gmail_sale_rejected';
+  targetUserId: string;
+  requestId: string;
+  status: 'success' | 'unsuccess';
+  timestamp: number;
+}
+
 export interface FormSubmission {
   id: string;
   uid: string;

@@ -105,6 +105,17 @@ const Admin = () => {
           activatedUserEmail: user?.email || 'Unknown',
           timestamp: Date.now()
         });
+
+        // Advanced Admin Log
+        await addDoc(collection(db, 'adminLogs'), {
+          adminId: profile.uid,
+          adminName: profile.displayName,
+          actionType: 'activation_success',
+          targetUserId: uid,
+          requestId: 'activation',
+          status: 'success',
+          timestamp: Date.now()
+        });
       }
       
       setUsers(users.map(u => {
@@ -131,6 +142,20 @@ const Admin = () => {
         // Deduct from wallet only when status becomes "success"
         await updateDoc(doc(db, 'users', userId), { walletBalance: increment(-amount) });
       }
+
+      // Advanced Admin Log
+      if (profile) {
+        await addDoc(collection(db, 'adminLogs'), {
+          adminId: profile.uid,
+          adminName: profile.displayName,
+          actionType: status === 'success' ? 'withdraw_success' : 'withdraw_rejected',
+          targetUserId: userId,
+          requestId: id,
+          status: status === 'success' ? 'success' : 'unsuccess',
+          timestamp: Date.now()
+        });
+      }
+
       setWithdraws(withdraws.filter(w => w.id !== id));
       alert(`Withdraw ${status}`);
     } catch (error) {
@@ -162,6 +187,17 @@ const Admin = () => {
                 activatedUserEmail: userData.email,
                 timestamp: Date.now()
               });
+
+              // Advanced Admin Log for activation
+              await addDoc(collection(db, 'adminLogs'), {
+                adminId: profile.uid,
+                adminName: profile.displayName,
+                actionType: 'activation_success',
+                targetUserId: userId,
+                requestId: id,
+                status: 'success',
+                timestamp: Date.now()
+              });
             }
             
             // Add transaction record
@@ -178,6 +214,20 @@ const Admin = () => {
           }
         }
       }
+
+      // Advanced Admin Log for topup
+      if (profile) {
+        await addDoc(collection(db, 'adminLogs'), {
+          adminId: profile.uid,
+          adminName: profile.displayName,
+          actionType: status === 'success' ? 'topup_success' : 'topup_rejected',
+          targetUserId: userId,
+          requestId: id,
+          status: status === 'success' ? 'success' : 'unsuccess',
+          timestamp: Date.now()
+        });
+      }
+
       setTopups(topups.filter(t => t.id !== id));
       alert(`Topup ${status}`);
     } catch (error) {
@@ -240,6 +290,20 @@ const Admin = () => {
       }
       
       await updateDoc(doc(db, 'recharges', id), { status });
+
+      // Advanced Admin Log
+      if (profile) {
+        await addDoc(collection(db, 'adminLogs'), {
+          adminId: profile.uid,
+          adminName: profile.displayName,
+          actionType: status === 'success' ? 'recharge_success' : 'recharge_rejected',
+          targetUserId: userId,
+          requestId: id,
+          status: status === 'success' ? 'success' : 'unsuccess',
+          timestamp: Date.now()
+        });
+      }
+
       setRecharges(recharges.filter(r => r.id !== id));
       alert(`Recharge ${status}`);
     } catch (error) {
@@ -267,6 +331,20 @@ const Admin = () => {
       }
       
       await updateDoc(doc(db, 'gmailSales', id), { status });
+
+      // Advanced Admin Log
+      if (profile) {
+        await addDoc(collection(db, 'adminLogs'), {
+          adminId: profile.uid,
+          adminName: profile.displayName,
+          actionType: status === 'success' ? 'gmail_sale_success' : 'gmail_sale_rejected',
+          targetUserId: userId,
+          requestId: id,
+          status: status === 'success' ? 'success' : 'unsuccess',
+          timestamp: Date.now()
+        });
+      }
+
       setGmailSales(gmailSales.filter(g => g.id !== id));
       alert(`Gmail Sale ${status}`);
     } catch (error) {
@@ -406,17 +484,17 @@ const Admin = () => {
                 />
               </div>
               {users.filter(u => 
-                u.eeId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                u.displayName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                u.email?.toLowerCase().includes(searchQuery.toLowerCase())
+                (u.eeId || "").toLowerCase().includes((searchQuery || "").toLowerCase()) ||
+                (u.displayName || "").toLowerCase().includes((searchQuery || "").toLowerCase()) ||
+                (u.email || "").toLowerCase().includes((searchQuery || "").toLowerCase())
               ).length === 0 ? (
                 <p className="text-center text-gray-500 py-12">No users found</p>
               ) : (
                 users
                   .filter(u => 
-                    u.eeId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    u.displayName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    u.email?.toLowerCase().includes(searchQuery.toLowerCase())
+                    (u.eeId || "").toLowerCase().includes((searchQuery || "").toLowerCase()) ||
+                    (u.displayName || "").toLowerCase().includes((searchQuery || "").toLowerCase()) ||
+                    (u.email || "").toLowerCase().includes((searchQuery || "").toLowerCase())
                   )
                   .map((u) => (
                     <Card key={u.uid} className="p-4">
