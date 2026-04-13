@@ -13,78 +13,115 @@ const Tasks = () => {
   const [showAd, setShowAd] = useState(false);
   const [adProgress, setAdProgress] = useState(0);
   const [completed, setCompleted] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const [isWatching, setIsWatching] = useState(false);
 
-  const MAX_VIDEOS = 5;
-  const REWARD = 5;
+  const MAX_ADS = 10;
+  const AD_REWARD = 0.5; // 0.5 BDT per ad
+  const WATCH_DURATION = 15; // 15 seconds
+  const COOLDOWN_DURATION = 20; // 20 seconds cooldown
 
   useEffect(() => {
-    const fetchDailyTasks = async () => {
-      if (!profile) return;
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+    if (!profile) return;
+    
+    const today = new Date().toLocaleDateString();
+    if (profile.lastAdDate !== today) {
+      // Reset daily count if it's a new day
+      const resetDailyCount = async () => {
+        try {
+          await updateDoc(doc(db, 'users', profile.uid), {
+            dailyAdsCount: 0,
+            lastAdDate: today
+          });
+          await refreshProfile();
+        } catch (error) {
+          console.error("Error resetting daily ads:", error);
+        }
+      };
+      resetDailyCount();
+    }
+  }, [profile, refreshProfile]);
 
-      const q = query(
-        collection(db, 'tasks'),
-        where('userId', '==', profile.uid),
-        where('type', '==', 'video'),
-        where('timestamp', '>=', today.getTime())
-      );
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (cooldown > 0) {
+      timer = setInterval(() => {
+        setCooldown(prev => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [cooldown]);
 
-      const querySnapshot = await getDocs(q);
-      setDailyCount(querySnapshot.size);
-    };
+  const handleWatchAd = () => {
+    if (!profile?.isActive) {
+      alert("Your account must be activated to earn rewards.");
+      return;
+    }
+    if ((profile.dailyAdsCount || 0) >= MAX_ADS) return;
+    if (cooldown > 0) return;
 
-    fetchDailyTasks();
-  }, [profile]);
+    // Monetag Ad Triggering Logic
+    // In a real scenario, the Monetag script would be loaded and would intercept this click
+    // or we would call a specific function provided by their SDK.
+    try {
+      // Attempt to trigger Monetag (this is a placeholder for the actual script interaction)
+      if ((window as any).showMonetagAd) {
+        (window as any).showMonetagAd();
+      }
+    } catch (e) {
+      console.error("Ad trigger error:", e);
+    }
 
-  const startAd = () => {
-    if (dailyCount >= MAX_VIDEOS) return;
-    setShowAd(true);
+    setIsWatching(true);
     setAdProgress(0);
     
-    const duration = 15; // 15 seconds ad
     const interval = setInterval(() => {
       setAdProgress((prev) => {
         if (prev >= 100) {
           clearInterval(interval);
           return 100;
         }
-        return prev + (100 / (duration * 10));
+        return prev + (100 / (WATCH_DURATION * 10));
       });
     }, 100);
   };
 
-  const completeTask = async () => {
+  const claimReward = async () => {
     if (!profile) return;
     setLoading(true);
     try {
-      // Add task record
-      await addDoc(collection(db, 'tasks'), {
-        userId: profile.uid,
-        type: 'video',
-        amount: REWARD,
-        timestamp: Date.now(),
-      });
-
-      // Update user wallet
       const userRef = doc(db, 'users', profile.uid);
       await updateDoc(userRef, {
-        walletBalance: increment(REWARD),
-        videoEarnings: increment(REWARD),
+        walletBalance: increment(AD_REWARD),
+        videoEarnings: increment(AD_REWARD),
+        dailyAdsCount: increment(1),
+        lastAdDate: new Date().toLocaleDateString()
+      });
+
+      // Log transaction
+      await addDoc(collection(db, 'walletTransactions'), {
+        userId: profile.uid,
+        amount: AD_REWARD,
+        type: 'credit',
+        description: 'Ad Watch Reward',
+        timestamp: Date.now()
       });
 
       await refreshProfile();
-      setDailyCount(prev => prev + 1);
       setCompleted(true);
-      setShowAd(false);
+      setIsWatching(false);
+      setCooldown(COOLDOWN_DURATION);
     } catch (error) {
       console.error(error);
+      alert("Error claiming reward. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   if (!profile) return null;
+
+  const currentAds = profile.dailyAdsCount || 0;
 
   return (
     <div className="pb-24 pt-6 px-6 bg-gray-50 min-h-screen">
@@ -93,79 +130,51 @@ const Tasks = () => {
         <p className="text-gray-500 text-sm">Watch ads and earn BDT</p>
       </header>
 
-      <Card className="py-16 px-6 text-center flex flex-col items-center justify-center">
-        <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-6">
+      <Card className="py-12 px-6 text-center flex flex-col items-center justify-center mb-6">
+        <div className="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-6">
           <PlayCircle size={40} />
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Coming Soon</h2>
-        <p className="text-gray-500 max-w-[240px] mx-auto">
-          Video earning will be available soon. Stay tuned for updates!
-        </p>
-      </Card>
-
-      {/* Existing logic hidden for future activation */}
-      <div className="hidden">
-        <Card className="mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <p className="text-sm text-gray-500 font-medium">Daily Progress</p>
-            <p className="text-2xl font-bold text-gray-900">{dailyCount} / {MAX_VIDEOS}</p>
-          </div>
-          <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
-            <PlayCircle size={24} />
-          </div>
+        
+        <div className="mb-6">
+          <p className="text-sm text-gray-500 font-medium mb-1">Today's Progress</p>
+          <p className="text-3xl font-bold text-gray-900">{currentAds} / {MAX_ADS}</p>
+          <p className="text-xs text-gray-400 mt-1">Ads Completed</p>
         </div>
-        <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+
+        <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden mb-8 max-w-[200px]">
           <div 
             className="bg-emerald-600 h-full transition-all duration-500" 
-            style={{ width: `${(dailyCount / MAX_VIDEOS) * 100}%` }}
+            style={{ width: `${(currentAds / MAX_ADS) * 100}%` }}
           />
         </div>
+
+        <p className="text-gray-600 text-sm mb-8">
+          Watch ads and earn rewards. Each ad gives {AD_REWARD} BDT.
+        </p>
+
+        {currentAds >= MAX_ADS ? (
+          <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl w-full">
+            <p className="text-amber-700 text-sm font-medium">Daily limit reached. Come back tomorrow.</p>
+          </div>
+        ) : (
+          <Button 
+            onClick={handleWatchAd} 
+            disabled={isWatching || cooldown > 0 || !profile.isActive}
+            className="w-full py-4 text-lg"
+          >
+            {cooldown > 0 ? `Wait ${cooldown}s` : 'Watch Ads'}
+          </Button>
+        )}
+
+        {!profile.isActive && (
+          <p className="text-red-500 text-[10px] mt-4 font-bold uppercase tracking-wider">
+            Account Activation Required
+          </p>
+        )}
       </Card>
 
-      {!profile.isActive ? (
-        <Card className="bg-amber-50 border-amber-100">
-          <div className="flex gap-3">
-            <AlertCircle className="text-amber-600 shrink-0" />
-            <p className="text-sm text-amber-800">Your account must be activated by an admin to earn from tasks.</p>
-          </div>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {Array.from({ length: MAX_VIDEOS }).map((_, i) => {
-            const isCompleted = i < dailyCount;
-            const isNext = i === dailyCount;
-
-            return (
-              <Card 
-                key={i} 
-                className={`flex justify-between items-center p-4 ${isCompleted ? 'opacity-50' : ''}`}
-              >
-                <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isCompleted ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-400'}`}>
-                    {isCompleted ? <CheckCircle2 size={20} /> : <PlayCircle size={20} />}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm">Task #{i + 1}</p>
-                    <p className="text-xs text-gray-500">Reward: {REWARD} BDT</p>
-                  </div>
-                </div>
-                {isNext && (
-                  <Button size="sm" onClick={startAd} disabled={loading}>
-                    Watch
-                  </Button>
-                )}
-                {isCompleted && (
-                  <span className="text-xs font-bold text-emerald-600 uppercase">Completed</span>
-                )}
-              </Card>
-            );
-          })}
-        </div>
-      )}
-
       <AnimatePresence>
-        {showAd && (
+        {isWatching && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -175,7 +184,8 @@ const Tasks = () => {
             <div className="w-full max-w-sm aspect-video bg-gray-900 rounded-2xl flex items-center justify-center relative overflow-hidden">
               <div className="text-white text-center">
                 <PlayCircle size={48} className="mx-auto mb-4 opacity-50" />
-                <p className="text-sm font-medium">Video Ad Playing...</p>
+                <p className="text-sm font-medium">Watching Ad...</p>
+                <p className="text-xs text-white/40 mt-2">Do not close this screen</p>
               </div>
               <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-800">
                 <div 
@@ -185,10 +195,10 @@ const Tasks = () => {
               </div>
             </div>
             
-            <div className="mt-8 text-center">
-              <p className="text-white/60 text-sm mb-4">Please wait for the ad to finish</p>
+            <div className="mt-8 text-center w-full max-w-xs">
+              <p className="text-white/60 text-sm mb-6">Please wait for the ad to finish</p>
               {adProgress >= 100 && (
-                <Button onClick={completeTask} disabled={loading} className="w-full">
+                <Button onClick={claimReward} disabled={loading} className="w-full py-4">
                   {loading ? <Loader2 className="animate-spin mx-auto" /> : 'Claim Reward'}
                 </Button>
               )}
@@ -207,7 +217,7 @@ const Tasks = () => {
                 <CheckCircle2 size={32} />
               </div>
               <h3 className="text-xl font-bold text-gray-900">Reward Claimed!</h3>
-              <p className="text-gray-500 mt-2 mb-6">You've earned {REWARD} BDT from this task.</p>
+              <p className="text-gray-500 mt-2 mb-6">You've earned {AD_REWARD} BDT from this ad.</p>
               <Button onClick={() => setCompleted(false)} className="w-full">
                 Awesome
               </Button>
@@ -215,7 +225,6 @@ const Tasks = () => {
           </motion.div>
         )}
       </AnimatePresence>
-      </div>
     </div>
   );
 };

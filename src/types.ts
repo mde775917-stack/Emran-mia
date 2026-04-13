@@ -12,6 +12,8 @@ export interface UserProfile {
   eeId: string;
   welcomeBonusGiven?: boolean;
   isInitiallyActivated?: boolean;
+  dailyAdsCount?: number;
+  lastAdDate?: string;
 }
 
 export interface ActivationLog {
