@@ -118,3 +118,17 @@ export interface GmailSaleRequest {
   status: 'pending' | 'success' | 'rejected';
   createdAt: number;
 }
+
+export interface Notice {
+  id: string;
+  message: string;
+  targetType: 'all' | 'single';
+  targetUserId?: string;
+  createdAt: number;
+  createdBy: string;
+}
+
+export interface NoticeStatus {
+  noticeId: string;
+  isRead: boolean;
+}

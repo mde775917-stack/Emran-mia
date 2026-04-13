@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Card, Button } from '../components/UI';
-import { User, Mail, Shield, LogOut, ChevronRight, Settings, HelpCircle, Bell, Share2, Copy, Check, X, ShieldAlert } from 'lucide-react';
+import { User, Mail, Shield, LogOut, ChevronRight, Settings, HelpCircle, Bell, Share2, Copy, Check, X, ShieldAlert, Info } from 'lucide-react';
+import { collection, query, where, getDocs, onSnapshot, orderBy, limit } from 'firebase/firestore';
+import { db } from '../firebase';
+import { Notice } from '../types';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 import { useNavigate, Link } from 'react-router-dom';
@@ -13,6 +16,29 @@ const Profile = () => {
   const [showReferModal, setShowReferModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [hasUnreadNotices, setHasUnreadNotices] = useState(false);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!user || !profile) return;
+
+    // Listen for notices
+    const q = query(collection(db, 'notices'), orderBy('createdAt', 'desc'), limit(50));
+    const unsubscribeNotices = onSnapshot(q, (snap) => {
+      const allNotices = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notice));
+      const userNotices = allNotices.filter(n => n.targetType === 'all' || n.targetUserId === profile.eeId);
+      
+      // Check read status
+      const statusQ = query(collection(db, `users/${user.uid}/noticeStatus`));
+      getDocs(statusQ).then(statusSnap => {
+        const readIds = new Set(statusSnap.docs.map(doc => doc.id));
+        const unread = userNotices.some(n => !readIds.has(n.id));
+        setHasUnreadNotices(unread);
+      });
+    });
+
+    return () => unsubscribeNotices();
+  }, [user, profile]);
 
   if (!profile) return null;
 
@@ -81,7 +107,7 @@ const Profile = () => {
       </Card>
 
       <Card 
-        className="p-4 mb-6 bg-emerald-600 text-white border-none shadow-lg shadow-emerald-100 cursor-pointer" 
+        className="p-4 mb-3 bg-emerald-600 text-white border-none shadow-lg shadow-emerald-100 cursor-pointer" 
         onClick={() => setShowReferModal(true)}
       >
         <div className="flex items-center justify-between">
@@ -97,6 +123,26 @@ const Profile = () => {
           <ChevronRight size={18} className="text-emerald-200" />
         </div>
       </Card>
+
+      <Link to="/notices">
+        <Card className="p-4 mb-6 flex justify-between items-center hover:bg-gray-50 transition-colors cursor-pointer relative">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
+              <Bell size={20} />
+            </div>
+            <div>
+              <p className="font-bold text-sm text-gray-900">Notice Box</p>
+              <p className="text-[10px] text-gray-500">Check important updates</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {hasUnreadNotices && (
+              <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse"></span>
+            )}
+            <ChevronRight size={18} className="text-gray-400" />
+          </div>
+        </Card>
+      </Link>
 
       <div className="space-y-3 mb-8">
         {menuItems.map((item) => (

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Card, Button } from '../components/UI';
-import { Users, ShoppingBag, CreditCard, Check, X, Loader2, ShieldCheck, UserMinus, UserPlus, Wallet, ExternalLink, FileText, Plus, Trash2, Edit2, Upload, Smartphone, Mail } from 'lucide-react';
-import { collection, query, getDocs, doc, updateDoc, increment, where, addDoc, deleteDoc, orderBy, getDoc } from 'firebase/firestore';
+import { Users, ShoppingBag, CreditCard, Check, X, Loader2, ShieldCheck, UserMinus, UserPlus, Wallet, ExternalLink, FileText, Plus, Trash2, Edit2, Upload, Smartphone, Mail, Bell } from 'lucide-react';
+import { collection, query, getDocs, doc, updateDoc, increment, where, addDoc, deleteDoc, orderBy, getDoc, limit } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { UserProfile, WithdrawRequest, Product, TopupRequest, FormSubmission, RechargeRequest, GmailSaleRequest } from '../types';
@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'motion/react';
 
 const Admin = () => {
   const { profile } = useAuth();
-  const [activeTab, setActiveTab] = useState<'users' | 'withdraws' | 'products' | 'topups' | 'forms' | 'recharges' | 'gmailSales'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'withdraws' | 'products' | 'topups' | 'forms' | 'recharges' | 'gmailSales' | 'notices'>('users');
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [withdraws, setWithdraws] = useState<WithdrawRequest[]>([]);
   const [topups, setTopups] = useState<TopupRequest[]>([]);
@@ -31,6 +31,12 @@ const Admin = () => {
   });
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [noticeForm, setNoticeForm] = useState({
+    message: '',
+    targetType: 'all' as 'all' | 'single',
+    targetUserId: ''
+  });
+  const [notices, setNotices] = useState<any[]>([]);
 
   useEffect(() => {
     if (profile?.role !== 'admin' && profile?.role !== 'superadmin' && !profile?.isAdmin) return;
@@ -66,6 +72,10 @@ const Admin = () => {
           const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
           const snap = await getDocs(q);
           setProducts(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product)));
+        } else if (activeTab === 'notices') {
+          const q = query(collection(db, 'notices'), orderBy('createdAt', 'desc'), limit(50));
+          const snap = await getDocs(q);
+          setNotices(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         }
       } catch (error: any) {
         console.error("Admin fetch error:", error);
@@ -436,6 +446,37 @@ const Admin = () => {
     setSearchQuery('');
   };
 
+  const handleSendNotice = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profile) return;
+    if (!noticeForm.message) return;
+    if (noticeForm.targetType === 'single' && !noticeForm.targetUserId) {
+      alert('Please enter target User ID');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await addDoc(collection(db, 'notices'), {
+        message: noticeForm.message,
+        targetType: noticeForm.targetType,
+        targetUserId: noticeForm.targetType === 'single' ? noticeForm.targetUserId : null,
+        createdAt: Date.now(),
+        createdBy: profile.uid
+      });
+      alert('Notice sent successfully');
+      setNoticeForm({ message: '', targetType: 'all', targetUserId: '' });
+      // Refresh notices
+      const q = query(collection(db, 'notices'), orderBy('createdAt', 'desc'), limit(50));
+      const snap = await getDocs(q);
+      setNotices(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    } catch (error) {
+      alert('Error sending notice');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="pb-24 pt-6 px-6 bg-gray-50 min-h-screen">
       <header className="mb-8">
@@ -452,6 +493,7 @@ const Admin = () => {
           { id: 'recharges', label: 'Recharges', icon: Smartphone },
           { id: 'gmailSales', label: 'Gmail Sales', icon: Mail },
           { id: 'products', label: 'Products', icon: ShoppingBag },
+          { id: 'notices', label: 'Notices', icon: Bell },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -735,6 +777,76 @@ const Admin = () => {
                           </button>
                         </div>
                       </div>
+                    </Card>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'notices' && (
+            <div className="space-y-6">
+              <Card className="p-6">
+                <h3 className="font-bold text-gray-900 mb-4">Send New Notice</h3>
+                <form onSubmit={handleSendNotice} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Target Audience</label>
+                    <select
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-emerald-500"
+                      value={noticeForm.targetType}
+                      onChange={e => setNoticeForm({ ...noticeForm, targetType: e.target.value as 'all' | 'single' })}
+                    >
+                      <option value="all">All Users</option>
+                      <option value="single">Single User</option>
+                    </select>
+                  </div>
+                  
+                  {noticeForm.targetType === 'single' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Target User ID (e.g. ES-123456)</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Enter User ID"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-emerald-500"
+                        value={noticeForm.targetUserId}
+                        onChange={e => setNoticeForm({ ...noticeForm, targetUserId: e.target.value })}
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                    <textarea
+                      required
+                      placeholder="Enter notice message..."
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-emerald-500 min-h-[100px]"
+                      value={noticeForm.message}
+                      onChange={e => setNoticeForm({ ...noticeForm, message: e.target.value })}
+                    />
+                  </div>
+
+                  <Button type="submit" className="w-full" disabled={submitting}>
+                    {submitting ? <Loader2 className="animate-spin mr-2" size={18} /> : <Bell size={18} className="mr-2" />}
+                    Send Notice
+                  </Button>
+                </form>
+              </Card>
+
+              <div className="space-y-4">
+                <h3 className="font-bold text-gray-900">Recent Notices</h3>
+                {notices.length === 0 ? (
+                  <p className="text-center text-gray-500 py-8">No notices sent yet</p>
+                ) : (
+                  notices.map((n) => (
+                    <Card key={n.id} className="p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase ${n.targetType === 'all' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'}`}>
+                          {n.targetType === 'all' ? 'All Users' : `User: ${n.targetUserId}`}
+                        </span>
+                        <span className="text-[10px] text-gray-400">{new Date(n.createdAt).toLocaleString()}</span>
+                      </div>
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{n.message}</p>
                     </Card>
                   ))
                 )}
