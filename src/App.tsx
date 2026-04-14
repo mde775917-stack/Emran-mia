@@ -20,6 +20,7 @@ import Recharge from './pages/Recharge';
 import SellGmail from './pages/SellGmail';
 import CEOPanel from './pages/CEOPanel';
 import NoticeBox from './pages/NoticeBox';
+import DailyTasks from './pages/DailyTasks';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -49,6 +50,7 @@ const AppContent = () => {
         <Route path="/sell-gmail" element={<PrivateRoute><SellGmail /></PrivateRoute>} />
         <Route path="/ceo-panel" element={<PrivateRoute><CEOPanel /></PrivateRoute>} />
         <Route path="/notices" element={<PrivateRoute><NoticeBox /></PrivateRoute>} />
+        <Route path="/daily-tasks" element={<PrivateRoute><DailyTasks /></PrivateRoute>} />
       </Routes>
       
       {user && <BottomNav />}

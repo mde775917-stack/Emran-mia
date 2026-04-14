@@ -297,7 +297,7 @@ const WalletPage = () => {
                   required
                   min={MIN_WITHDRAW}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-emerald-500"
-                  value={withdrawForm.amount}
+                  value={isNaN(withdrawForm.amount) ? '' : withdrawForm.amount}
                   onChange={e => setWithdrawForm({...withdrawForm, amount: parseInt(e.target.value)})}
                 />
               </div>

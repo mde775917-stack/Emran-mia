@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Card, Button } from '../components/UI';
-import { Shield, Users, FileText, Loader2, UserPlus, UserMinus, Clock, Search, CreditCard, Wallet, Smartphone, Mail, ShoppingBag, BarChart3, ChevronRight, ArrowLeft, Filter, Calendar } from 'lucide-react';
-import { collection, query, getDocs, doc, updateDoc, where, orderBy, limit, Timestamp } from 'firebase/firestore';
+import { Shield, Users, FileText, Loader2, UserPlus, UserMinus, Clock, Search, CreditCard, Wallet, Smartphone, Mail, ShoppingBag, BarChart3, ChevronRight, ArrowLeft, Filter, Calendar, Globe } from 'lucide-react';
+import { collection, query, getDocs, doc, updateDoc, where, orderBy, limit, Timestamp, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { UserProfile, ActivationLog, AdminLog, WithdrawRequest, TopupRequest, RechargeRequest, GmailSaleRequest, Product } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 
-type CEOTab = 'admins' | 'users' | 'withdraws' | 'topups' | 'recharges' | 'gmailSales' | 'products' | 'adminActivity';
+type CEOTab = 'admins' | 'users' | 'withdraws' | 'topups' | 'recharges' | 'gmailSales' | 'products' | 'adminActivity' | 'dailyTaskSettings';
 
 const CEOPanel = () => {
   const { profile } = useAuth();
@@ -24,6 +24,13 @@ const CEOPanel = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [processing, setProcessing] = useState<string | null>(null);
   
+  // Daily Task Settings
+  const [dailySettings, setDailySettings] = useState<{ websiteLink: string, rewardAmount: number }>({
+    websiteLink: '',
+    rewardAmount: 1.4
+  });
+  const [dailyTaskStats, setDailyTaskStats] = useState({ totalCompletions: 0, todayCompletions: 0 });
+
   // Admin Activity Stats
   const [adminStats, setAdminStats] = useState<any[]>([]);
   const [selectedAdmin, setSelectedAdmin] = useState<UserProfile | null>(null);
@@ -99,6 +106,20 @@ const CEOPanel = () => {
             };
           });
           setAdminStats(stats);
+        } else if (activeTab === 'dailyTaskSettings') {
+          const settingsDoc = await getDoc(doc(db, 'dailyTaskSettings', 'global'));
+          if (settingsDoc.exists()) {
+            setDailySettings(settingsDoc.data() as any);
+          }
+
+          const today = new Date().toISOString().split('T')[0];
+          const tasksSnap = await getDocs(collection(db, 'dailyTasks'));
+          const tasks = tasksSnap.docs.map(doc => doc.data());
+          
+          setDailyTaskStats({
+            totalCompletions: tasks.reduce((acc, curr: any) => acc + (curr.completedTasks?.length || 0), 0),
+            todayCompletions: tasks.filter((t: any) => t.lastCompletedDate === today).length
+          });
         }
       } catch (error) {
         console.error("CEO Panel fetch error:", error);
@@ -323,6 +344,7 @@ const CEOPanel = () => {
     { id: 'gmailSales', label: 'Gmail Sales', icon: Mail },
     { id: 'products', label: 'Products', icon: ShoppingBag },
     { id: 'adminActivity', label: 'Activity', icon: BarChart3 },
+    { id: 'dailyTaskSettings', label: 'Daily Task', icon: Globe },
   ];
 
   return (
@@ -592,6 +614,66 @@ const CEOPanel = () => {
                   </Card>
                 ))
               )}
+            </div>
+          )}
+          {activeTab === 'dailyTaskSettings' && (
+            <div className="space-y-6">
+              <Card className="p-6">
+                <h3 className="font-bold text-gray-900 mb-6 flex items-center gap-2">
+                  <Globe size={18} className="text-emerald-600" />
+                  Daily Task Configuration
+                </h3>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Website Link</label>
+                    <input 
+                      type="text" 
+                      className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-500"
+                      value={dailySettings.websiteLink}
+                      onChange={(e) => setDailySettings({ ...dailySettings, websiteLink: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Reward Amount (BDT)</label>
+                    <input 
+                      type="number" 
+                      step="0.1"
+                      className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-500"
+                      value={isNaN(dailySettings.rewardAmount) ? '' : dailySettings.rewardAmount}
+                      onChange={(e) => setDailySettings({ ...dailySettings, rewardAmount: parseFloat(e.target.value) })}
+                    />
+                  </div>
+                  <Button 
+                    className="w-full py-4"
+                    onClick={async () => {
+                      setProcessing('settings');
+                      try {
+                        await setDoc(doc(db, 'dailyTaskSettings', 'global'), dailySettings);
+                        alert('Settings updated successfully');
+                      } catch (error) {
+                        alert('Error updating settings');
+                      } finally {
+                        setProcessing(null);
+                      }
+                    }}
+                    disabled={processing === 'settings'}
+                  >
+                    {processing === 'settings' ? <Loader2 className="animate-spin mx-auto" /> : 'Save Settings'}
+                  </Button>
+                </div>
+              </Card>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Card className="p-4 bg-blue-50 border-blue-100">
+                  <p className="text-[10px] text-blue-600 uppercase font-bold tracking-wider mb-1">Today's Active Users</p>
+                  <p className="text-2xl font-bold text-blue-700">{dailyTaskStats.todayCompletions}</p>
+                </Card>
+                <Card className="p-4 bg-purple-50 border-purple-100">
+                  <p className="text-[10px] text-purple-600 uppercase font-bold tracking-wider mb-1">Total Task Earnings</p>
+                  <p className="text-2xl font-bold text-purple-700">{dailyTaskStats.totalCompletions}</p>
+                </Card>
+              </div>
             </div>
           )}
         </div>

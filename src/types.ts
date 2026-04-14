@@ -134,3 +134,15 @@ export interface NoticeStatus {
   noticeId: string;
   isRead: boolean;
 }
+
+export interface DailyTaskSettings {
+  websiteLink: string;
+  rewardAmount: number;
+}
+
+export interface UserDailyTask {
+  userId: string;
+  completedTasks: number[]; // [1, 2, 3, 4, 5]
+  lastCompletedDate: string; // YYYY-MM-DD
+  totalEarned: number;
+}

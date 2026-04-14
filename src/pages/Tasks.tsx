@@ -60,14 +60,17 @@ const Tasks = () => {
     if ((profile.dailyAdsCount || 0) >= MAX_ADS) return;
     if (cooldown > 0) return;
 
-    // Monetag Ad Triggering Logic
-    // In a real scenario, the Monetag script would be loaded and would intercept this click
-    // or we would call a specific function provided by their SDK.
+    // Dynamically load and trigger Monetag OnClick script ONLY on button click
     try {
-      // Attempt to trigger Monetag (this is a placeholder for the actual script interaction)
-      if ((window as any).showMonetagAd) {
-        (window as any).showMonetagAd();
-      }
+      const s = document.createElement('script');
+      s.dataset.zone = '10873029';
+      s.src = 'https://al5sm.com/tag.min.js';
+      document.body.appendChild(s);
+      
+      // Cleanup script after a short delay or when ad is finished
+      setTimeout(() => {
+        if (s.parentNode) s.parentNode.removeChild(s);
+      }, 5000);
     } catch (e) {
       console.error("Ad trigger error:", e);
     }
