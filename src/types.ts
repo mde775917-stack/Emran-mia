@@ -14,6 +14,7 @@ export interface UserProfile {
   isInitiallyActivated?: boolean;
   dailyAdsCount?: number;
   lastAdDate?: string;
+  appDownloadRewardClaimed?: boolean;
 }
 
 export interface ActivationLog {

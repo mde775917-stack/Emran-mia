@@ -1,22 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Card, Button } from '../components/UI';
-import { User, Mail, Shield, LogOut, ChevronRight, Settings, HelpCircle, Bell, Share2, Copy, Check, X, ShieldAlert, Info } from 'lucide-react';
-import { collection, query, where, getDocs, onSnapshot, orderBy, limit } from 'firebase/firestore';
+import { User, Mail, Shield, LogOut, ChevronRight, Settings, HelpCircle, Bell, Share2, Copy, Check, X, ShieldAlert, Info, Download } from 'lucide-react';
+import { collection, query, where, getDocs, onSnapshot, orderBy, limit, updateDoc, doc, increment, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Notice } from '../types';
+import { Notice, WalletTransaction } from '../types';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 
 const Profile = () => {
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [showReferModal, setShowReferModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [hasUnreadNotices, setHasUnreadNotices] = useState(false);
+  const [claiming, setClaiming] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -69,6 +70,40 @@ const Profile = () => {
   const handleLogout = async () => {
     await signOut(auth);
     navigate('/login');
+  };
+
+  const handleAppDownload = async () => {
+    if (profile.appDownloadRewardClaimed) {
+      window.open('https://gdisbbd9w7-byte.github.io/-earnhvube_bot/', '_blank');
+      return;
+    }
+
+    setClaiming(true);
+    try {
+      window.open('https://gdisbbd9w7-byte.github.io/-earnhvube_bot/', '_blank');
+
+      const userRef = doc(db, 'users', profile.uid);
+      await updateDoc(userRef, {
+        walletBalance: increment(15),
+        appDownloadRewardClaimed: true
+      });
+
+      await addDoc(collection(db, 'walletTransactions'), {
+        userId: profile.uid,
+        amount: 15,
+        type: 'credit',
+        description: 'App Download Reward',
+        timestamp: Date.now()
+      } as Omit<WalletTransaction, 'id'>);
+
+      await refreshProfile();
+      alert('Congratulations! 15 BDT added to your wallet.');
+    } catch (error) {
+      console.error('Error claiming app download reward:', error);
+      alert('Something went wrong. Please try again.');
+    } finally {
+      setClaiming(false);
+    }
   };
 
   const menuItems = [
@@ -143,6 +178,30 @@ const Profile = () => {
           </div>
         </Card>
       </Link>
+
+      <Card 
+        className={`p-4 mb-6 flex justify-between items-center transition-colors cursor-pointer relative ${profile.appDownloadRewardClaimed ? 'bg-gray-50 opacity-80' : 'hover:bg-gray-50'}`}
+        onClick={handleAppDownload}
+      >
+        <div className="flex items-center gap-4">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${profile.appDownloadRewardClaimed ? 'bg-gray-200 text-gray-500' : 'bg-blue-50 text-blue-600'}`}>
+            <Download size={20} />
+          </div>
+          <div>
+            <p className="font-bold text-sm text-gray-900">App Download</p>
+            <p className="text-[10px] text-gray-500">
+              {profile.appDownloadRewardClaimed ? 'Already Claimed' : 'Install app and earn 15 BDT'}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {profile.appDownloadRewardClaimed ? (
+            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">Claimed</span>
+          ) : (
+            <ChevronRight size={18} className="text-gray-400" />
+          )}
+        </div>
+      </Card>
 
       <div className="space-y-3 mb-8">
         {menuItems.map((item) => (
