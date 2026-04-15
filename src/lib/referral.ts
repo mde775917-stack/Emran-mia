@@ -9,14 +9,15 @@ export const handleReferralReward = async (userId: string) => {
     if (!userSnap.exists()) return;
 
     const profile = userSnap.data() as UserProfile;
-    // Check if reward already given
+    
+    // 1. Prevent duplicate: Do NOT give reward again if already given
     if (profile.referralRewardGiven) return;
 
-    // Condition: first task completed OR account activated
+    // 2. Logic: When user completes first task or becomes active
     const isEligible = profile.hasCompletedFirstTask || profile.isActive;
     if (!isEligible) return;
 
-    // If referred by someone, give rewards
+    // 3. Check: if referredBy exists
     if (profile.referredBy) {
       // Prevent self referral
       if (profile.referredBy === profile.eeId) {
@@ -24,50 +25,39 @@ export const handleReferralReward = async (userId: string) => {
         return;
       }
 
-      // Fetch referral settings
+      // Fetch referral settings (default 5 BDT if not set)
       const settingsDoc = await getDoc(doc(db, 'referralSettings', 'global'));
-      const settings: ReferralSettings = settingsDoc.exists() 
-        ? settingsDoc.data() as ReferralSettings 
-        : { inviterBonus: 5, newUserBonus: 5, requireFirstTask: true, referralLimit: 1000 };
+      const rewardAmount = settingsDoc.exists() 
+        ? (settingsDoc.data() as ReferralSettings).inviterBonus 
+        : 5;
 
-      // Give reward to new user
-      await updateDoc(userRef, {
-        walletBalance: increment(settings.newUserBonus),
-        referralRewardGiven: true
-      });
-
-      await addDoc(collection(db, 'walletTransactions'), {
-        userId: profile.uid,
-        amount: settings.newUserBonus,
-        type: 'credit',
-        description: 'Referral Join Bonus',
-        timestamp: Date.now()
-      } as Omit<WalletTransaction, 'id'>);
-
-      // Give reward to inviter
+      // 4. Then: Add reward to referrer wallet
       const inviterQ = query(collection(db, 'users'), where('eeId', '==', profile.referredBy));
       const inviterSnap = await getDocs(inviterQ);
+      
       if (!inviterSnap.empty) {
         const inviterDoc = inviterSnap.docs[0];
+        const inviterId = inviterDoc.id;
         const inviterProfile = inviterDoc.data() as UserProfile;
 
-        // Check referral limit
-        if ((inviterProfile.referralCount || 0) <= settings.referralLimit) {
-          await updateDoc(doc(db, 'users', inviterDoc.id), {
-            walletBalance: increment(settings.inviterBonus),
+        // Check referral limit (if set)
+        const referralLimit = settingsDoc.exists() ? (settingsDoc.data() as ReferralSettings).referralLimit : 1000;
+        if ((inviterProfile.referralCount || 0) <= referralLimit) {
+          await updateDoc(doc(db, 'users', inviterId), {
+            walletBalance: increment(rewardAmount),
             activeReferralCount: increment(1),
-            referralEarnings: increment(settings.inviterBonus)
+            referralEarnings: increment(rewardAmount)
           });
 
           await addDoc(collection(db, 'walletTransactions'), {
-            userId: inviterDoc.id,
-            amount: settings.inviterBonus,
+            userId: inviterId,
+            amount: rewardAmount,
             type: 'credit',
-            description: `Referral Bonus (${profile.displayName})`,
+            description: `Referral Reward (${profile.displayName})`,
             timestamp: Date.now()
           } as Omit<WalletTransaction, 'id'>);
 
-          // Level System Bonuses
+          // Level System Bonuses (Keep logic for milestones)
           const newActiveCount = (inviterProfile.activeReferralCount || 0) + 1;
           let levelBonus = 0;
           if (newActiveCount === 5) levelBonus = 10;
@@ -75,13 +65,13 @@ export const handleReferralReward = async (userId: string) => {
           if (newActiveCount === 20) levelBonus = 60;
 
           if (levelBonus > 0) {
-            await updateDoc(doc(db, 'users', inviterDoc.id), {
+            await updateDoc(doc(db, 'users', inviterId), {
               walletBalance: increment(levelBonus),
               referralEarnings: increment(levelBonus)
             });
 
             await addDoc(collection(db, 'walletTransactions'), {
-              userId: inviterDoc.id,
+              userId: inviterId,
               amount: levelBonus,
               type: 'credit',
               description: `Referral Level Bonus (${newActiveCount} Referrals)`,
@@ -90,10 +80,10 @@ export const handleReferralReward = async (userId: string) => {
           }
         }
       }
-    } else {
-      // No referrer, just mark as given to stop checking
-      await updateDoc(userRef, { referralRewardGiven: true });
     }
+
+    // 5. Update: referralRewardGiven = true (for the new user)
+    await updateDoc(userRef, { referralRewardGiven: true });
   } catch (error) {
     console.error("Error handling referral reward:", error);
   }
