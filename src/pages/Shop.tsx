@@ -68,9 +68,12 @@ const Shop = () => {
           {products.map((product) => (
             <Card key={product.id} className="p-0 overflow-hidden flex flex-col">
               <img 
-                src={product.imageUrl} 
+                src={product.imageUrl || 'https://picsum.photos/seed/placeholder/400/400'} 
                 alt={product.name} 
                 className="w-full aspect-square object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/placeholder/400/400';
+                }}
                 referrerPolicy="no-referrer"
               />
               <div className="p-3 flex flex-col flex-1">

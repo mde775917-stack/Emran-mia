@@ -3,8 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Card, Button } from '../components/UI';
 import { Users, ShoppingBag, CreditCard, Check, X, Loader2, ShieldCheck, UserMinus, UserPlus, Wallet, ExternalLink, FileText, Plus, Trash2, Edit2, Upload, Smartphone, Mail, Bell } from 'lucide-react';
 import { collection, query, getDocs, doc, updateDoc, increment, where, addDoc, deleteDoc, orderBy, getDoc, limit } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../firebase';
+import { db } from '../firebase';
 import { UserProfile, WithdrawRequest, Product, TopupRequest, FormSubmission, RechargeRequest, GmailSaleRequest } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -29,7 +28,6 @@ const Admin = () => {
     category: 'T-Shirt',
     imageUrl: ''
   });
-  const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [noticeForm, setNoticeForm] = useState({
     message: '',
@@ -360,23 +358,6 @@ const Admin = () => {
     } catch (error) {
       console.error(error);
       alert('Error processing Gmail sale');
-    }
-  };
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-    try {
-      const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
-      const snapshot = await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(snapshot.ref);
-      setProductForm({ ...productForm, imageUrl: url });
-    } catch (error) {
-      alert('Error uploading image');
-    } finally {
-      setUploading(false);
     }
   };
 
@@ -762,7 +743,15 @@ const Admin = () => {
                   products.map((p) => (
                     <Card key={p.id} className="p-4">
                       <div className="flex gap-4">
-                        <img src={p.imageUrl} alt={p.name} className="w-20 h-20 rounded-xl object-cover" referrerPolicy="no-referrer" />
+                        <img 
+                          src={p.imageUrl || 'https://picsum.photos/seed/placeholder/400/400'} 
+                          alt={p.name} 
+                          className="w-20 h-20 rounded-xl object-cover" 
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/placeholder/400/400';
+                          }}
+                          referrerPolicy="no-referrer" 
+                        />
                         <div className="flex-1">
                           <h4 className="font-bold text-gray-900">{p.name}</h4>
                           <p className="text-xs text-gray-500 line-clamp-1">{p.description}</p>
@@ -917,28 +906,39 @@ const Admin = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Product Image</label>
-                  <div className="flex items-center gap-4">
-                    {productForm.imageUrl && (
-                      <img src={productForm.imageUrl} alt="Preview" className="w-16 h-16 rounded-lg object-cover" />
-                    )}
-                    <label className="flex-1 cursor-pointer">
-                      <div className="w-full border-2 border-dashed border-gray-200 rounded-xl p-4 flex flex-col items-center justify-center hover:bg-gray-50 transition-colors">
-                        {uploading ? (
-                          <Loader2 className="animate-spin text-emerald-600" size={24} />
-                        ) : (
-                          <>
-                            <Upload className="text-gray-400 mb-1" size={20} />
-                            <span className="text-xs text-gray-500">Click to upload</span>
-                          </>
-                        )}
-                      </div>
-                      <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
-                    </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Product Image URL</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Enter image URL (https://...)"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-emerald-500"
+                    value={productForm.imageUrl}
+                    onChange={e => setProductForm({ ...productForm, imageUrl: e.target.value })}
+                  />
+                  <div className="mt-4">
+                    <p className="text-xs text-gray-400 mb-2 uppercase font-bold">Preview</p>
+                    <div className="w-full aspect-square bg-gray-50 rounded-2xl border border-gray-100 overflow-hidden flex items-center justify-center">
+                      {productForm.imageUrl ? (
+                        <img 
+                          src={productForm.imageUrl} 
+                          alt="Preview" 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/placeholder/400/400';
+                          }}
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="text-center p-6">
+                          <ShoppingBag className="text-gray-200 mx-auto mb-2" size={48} />
+                          <p className="text-xs text-gray-400">No image URL provided</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full py-4 mt-4" disabled={submitting || uploading}>
+                <Button type="submit" className="w-full py-4 mt-4" disabled={submitting}>
                   {submitting ? <Loader2 className="animate-spin mx-auto" /> : (editingProduct ? 'Update Product' : 'Add Product')}
                 </Button>
               </form>
