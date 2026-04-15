@@ -6,6 +6,7 @@ import { collection, query, getDocs, doc, updateDoc, increment, where, addDoc, d
 import { db } from '../firebase';
 import { UserProfile, WithdrawRequest, Product, TopupRequest, FormSubmission, RechargeRequest, GmailSaleRequest } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
+import { handleReferralReward } from '../lib/referral';
 
 const Admin = () => {
   const { profile } = useAuth();
@@ -103,6 +104,11 @@ const Admin = () => {
       }
       
       await updateDoc(userRef, updates);
+
+      // Handle referral reward if activated
+      if (newStatus === true) {
+        await handleReferralReward(uid);
+      }
 
       // Log activation if status changed to true
       if (newStatus === true && profile) {
@@ -216,6 +222,9 @@ const Admin = () => {
               description: 'Activation completed and 530 deducted as activation charge. Balance reset to 1 BDT.',
               timestamp: Date.now()
             });
+
+            // Handle referral reward on activation
+            await handleReferralReward(userId);
           } else {
             // Normal topup
             await updateDoc(doc(db, 'users', userId), { walletBalance: increment(amount) });

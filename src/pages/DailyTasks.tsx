@@ -7,6 +7,7 @@ import { db } from '../firebase';
 import { DailyTaskSettings, UserDailyTask } from '../types';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
+import { handleReferralReward } from '../lib/referral';
 
 const DailyTasks = () => {
   const { profile, user, refreshProfile } = useAuth();
@@ -99,6 +100,13 @@ const DailyTasks = () => {
         description: `Daily Task: Website Visit ${taskId}`,
         timestamp: Date.now()
       });
+
+      // Handle referral reward on first task
+      if (!profile.hasCompletedFirstTask) {
+        await updateDoc(doc(db, 'users', user.uid), { hasCompletedFirstTask: true });
+        await handleReferralReward(user.uid);
+        await refreshProfile();
+      }
 
       setUserProgress({
         ...userProgress,

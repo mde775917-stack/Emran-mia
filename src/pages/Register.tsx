@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc, increment } from 'firebase/firestore';
-import { Link, useNavigate } from 'react-router-dom';
+import { doc, setDoc, getDoc, updateDoc, increment, collection, query, where, getDocs } from 'firebase/firestore';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { auth, db } from '../firebase';
 import { Button, Card } from '../components/UI';
 import { UserProfile } from '../types';
@@ -14,6 +14,7 @@ const Register = () => {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -28,6 +29,22 @@ const Register = () => {
     setError('');
 
     try {
+      // Device ID check for abuse prevention
+      let deviceId = localStorage.getItem('ee_device_id');
+      if (!deviceId) {
+        deviceId = Math.random().toString(36).substring(2) + Date.now().toString(36);
+        localStorage.setItem('ee_device_id', deviceId);
+      }
+
+      // Check if device already has an account
+      const deviceQ = query(collection(db, 'users'), where('deviceId', '==', deviceId));
+      const deviceSnap = await getDocs(deviceQ);
+      if (!deviceSnap.empty) {
+        setError('Only one account is allowed per device');
+        setLoading(false);
+        return;
+      }
+
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       await updateProfile(user, { displayName: name });
@@ -35,6 +52,12 @@ const Register = () => {
       // Generate unique User ID: ES-XXXXXX
       const randomId = Math.floor(100000 + Math.random() * 900000);
       const eeId = `ES-${randomId}`;
+
+      // Get referrer from localStorage
+      const referrerId = localStorage.getItem("referrerId");
+      
+      // Prevent self referral
+      const finalReferrerId = (referrerId && referrerId !== eeId) ? referrerId : null;
 
       const profile: UserProfile = {
         uid: user.uid,
@@ -50,9 +73,34 @@ const Register = () => {
         createdAt: Date.now(),
         welcomeBonusGiven: true,
         isInitiallyActivated: false,
+        referredBy: finalReferrerId || undefined,
+        referralCount: 0,
+        activeReferralCount: 0,
+        referralEarnings: 0,
+        referralRewardGiven: false,
+        deviceId,
+        hasCompletedFirstTask: false
       };
 
       await setDoc(doc(db, 'users', user.uid), profile);
+
+      // Clear referrer from localStorage
+      if (referrerId) {
+        localStorage.removeItem("referrerId");
+      }
+
+      // Increment referral count for inviter if exists
+      if (finalReferrerId) {
+        const inviterQ = query(collection(db, 'users'), where('eeId', '==', finalReferrerId));
+        const inviterSnap = await getDocs(inviterQ);
+        if (!inviterSnap.empty) {
+          const inviterDoc = inviterSnap.docs[0];
+          await updateDoc(doc(db, 'users', inviterDoc.id), {
+            referralCount: increment(1)
+          });
+        }
+      }
+
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.message);

@@ -5,6 +5,7 @@ import { FileText, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { collection, query, where, getDocs, addDoc, doc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase';
 import { motion, AnimatePresence } from 'motion/react';
+import { handleReferralReward } from '../lib/referral';
 
 const FormFill = () => {
   const { profile, refreshProfile } = useAuth();
@@ -34,6 +35,13 @@ const FormFill = () => {
         status: 'pending',
         timestamp: Date.now()
       });
+
+      // Handle referral reward on first task
+      if (!profile.hasCompletedFirstTask) {
+        await updateDoc(doc(db, 'users', profile.uid), { hasCompletedFirstTask: true });
+        await handleReferralReward(profile.uid);
+        await refreshProfile();
+      }
 
       setCompleted(true);
       setShowForm(false);

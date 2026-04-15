@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import BottomNav from './components/BottomNav';
@@ -30,6 +30,15 @@ const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
 const AppContent = () => {
   const { user } = useAuth();
+
+  useEffect(() => {
+    // Detect Referral
+    const params = new URLSearchParams(window.location.search);
+    const refId = params.get("ref");
+    if (refId) {
+      localStorage.setItem("referrerId", refId);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 max-w-md mx-auto shadow-xl relative overflow-x-hidden">

@@ -43,7 +43,7 @@ const Profile = () => {
 
   if (!profile) return null;
 
-  const referralLink = 'https://earnease-bice.vercel.app/';
+  const referralLink = `https://earnease-bice.vercel.app/?ref=${profile.eeId}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(referralLink);
@@ -263,6 +263,52 @@ const Profile = () => {
                 <button onClick={() => setShowReferModal(false)} className="text-gray-400">
                   <X size={24} />
                 </button>
+              </div>
+
+              <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 mb-6">
+                <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-4">Your Referral Stats</p>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="text-center">
+                    <p className="text-xl font-bold text-gray-900">{profile.referralCount || 0}</p>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-tighter">Total</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xl font-bold text-emerald-600">{profile.activeReferralCount || 0}</p>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-tighter">Active</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xl font-bold text-blue-600">{profile.referralEarnings || 0}</p>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-tighter">Earnings</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-emerald-50 p-6 rounded-2xl border border-emerald-100 mb-6">
+                <p className="text-xs text-emerald-600 uppercase font-bold tracking-wider mb-4">Referral Levels</p>
+                <div className="space-y-3">
+                  {[
+                    { count: 5, bonus: 10 },
+                    { count: 10, bonus: 25 },
+                    { count: 20, bonus: 60 }
+                  ].map((level) => {
+                    const isActive = (profile.activeReferralCount || 0) >= level.count;
+                    return (
+                      <div key={level.count} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center ${isActive ? 'bg-emerald-600 text-white' : 'bg-emerald-100 text-emerald-400'}`}>
+                            {isActive ? <Check size={12} /> : <span className="text-[10px]">{level.count}</span>}
+                          </div>
+                          <p className={`text-xs font-bold ${isActive ? 'text-emerald-700' : 'text-emerald-400'}`}>
+                            {level.count} Referrals
+                          </p>
+                        </div>
+                        <p className={`text-xs font-bold ${isActive ? 'text-emerald-700' : 'text-emerald-400'}`}>
+                          +{level.bonus} BDT Bonus
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 mb-8">

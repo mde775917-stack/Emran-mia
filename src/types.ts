@@ -15,6 +15,13 @@ export interface UserProfile {
   dailyAdsCount?: number;
   lastAdDate?: string;
   appDownloadRewardClaimed?: boolean;
+  referredBy?: string; // eeId of the inviter
+  referralCount?: number;
+  activeReferralCount?: number;
+  referralEarnings?: number;
+  referralRewardGiven?: boolean; // For the new user
+  deviceId?: string; // For abuse prevention
+  hasCompletedFirstTask?: boolean;
 }
 
 export interface ActivationLog {
@@ -146,4 +153,16 @@ export interface UserDailyTask {
   completedTasks: number[]; // [1, 2, 3, 4, 5]
   lastCompletedDate: string; // YYYY-MM-DD
   totalEarned: number;
+}
+
+export interface ReferralSettings {
+  inviterBonus: number;
+  newUserBonus: number;
+  requireFirstTask: boolean;
+  referralLimit: number;
+}
+
+export interface ReferralLevel {
+  referralCount: number;
+  bonus: number;
 }

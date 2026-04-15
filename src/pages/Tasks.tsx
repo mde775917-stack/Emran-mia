@@ -5,6 +5,7 @@ import { PlayCircle, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { collection, query, where, getDocs, addDoc, doc, updateDoc, increment, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { motion, AnimatePresence } from 'motion/react';
+import { handleReferralReward } from '../lib/referral';
 
 const Tasks = () => {
   const { profile, refreshProfile } = useAuth();
@@ -111,6 +112,14 @@ const Tasks = () => {
       });
 
       await refreshProfile();
+      
+      // Handle referral reward on first task
+      if (!profile.hasCompletedFirstTask) {
+        await updateDoc(doc(db, 'users', profile.uid), { hasCompletedFirstTask: true });
+        await handleReferralReward(profile.uid);
+        await refreshProfile();
+      }
+
       setCompleted(true);
       setIsWatching(false);
       setCooldown(COOLDOWN_DURATION);

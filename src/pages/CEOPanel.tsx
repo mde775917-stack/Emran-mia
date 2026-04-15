@@ -7,7 +7,7 @@ import { db } from '../firebase';
 import { UserProfile, ActivationLog, AdminLog, WithdrawRequest, TopupRequest, RechargeRequest, GmailSaleRequest, Product } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 
-type CEOTab = 'admins' | 'users' | 'withdraws' | 'topups' | 'recharges' | 'gmailSales' | 'products' | 'adminActivity' | 'dailyTaskSettings';
+type CEOTab = 'admins' | 'users' | 'withdraws' | 'topups' | 'recharges' | 'gmailSales' | 'products' | 'adminActivity' | 'dailyTaskSettings' | 'referralSettings';
 
 const CEOPanel = () => {
   const { profile } = useAuth();
@@ -30,6 +30,14 @@ const CEOPanel = () => {
     rewardAmount: 1.4
   });
   const [dailyTaskStats, setDailyTaskStats] = useState({ totalCompletions: 0, todayCompletions: 0 });
+
+  // Referral Settings
+  const [referralSettings, setReferralSettings] = useState({
+    inviterBonus: 5,
+    newUserBonus: 5,
+    requireFirstTask: true,
+    referralLimit: 1000
+  });
 
   // Admin Activity Stats
   const [adminStats, setAdminStats] = useState<any[]>([]);
@@ -120,6 +128,11 @@ const CEOPanel = () => {
             totalCompletions: tasks.reduce((acc, curr: any) => acc + (curr.completedTasks?.length || 0), 0),
             todayCompletions: tasks.filter((t: any) => t.lastCompletedDate === today).length
           });
+        } else if (activeTab === 'referralSettings') {
+          const settingsDoc = await getDoc(doc(db, 'referralSettings', 'global'));
+          if (settingsDoc.exists()) {
+            setReferralSettings(settingsDoc.data() as any);
+          }
         }
       } catch (error) {
         console.error("CEO Panel fetch error:", error);
@@ -345,6 +358,7 @@ const CEOPanel = () => {
     { id: 'products', label: 'Products', icon: ShoppingBag },
     { id: 'adminActivity', label: 'Activity', icon: BarChart3 },
     { id: 'dailyTaskSettings', label: 'Daily Task', icon: Globe },
+    { id: 'referralSettings', label: 'Referral', icon: UserPlus },
   ];
 
   return (
@@ -674,6 +688,95 @@ const CEOPanel = () => {
                   <p className="text-2xl font-bold text-purple-700">{dailyTaskStats.totalCompletions}</p>
                 </Card>
               </div>
+            </div>
+          )}
+          {activeTab === 'referralSettings' && (
+            <div className="space-y-6">
+              <Card className="p-6">
+                <h3 className="font-bold text-gray-900 mb-6 flex items-center gap-2">
+                  <UserPlus size={18} className="text-emerald-600" />
+                  Referral System Configuration
+                </h3>
+                
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Inviter Bonus (BDT)</label>
+                      <input 
+                        type="number" 
+                        className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-500"
+                        value={referralSettings.inviterBonus}
+                        onChange={(e) => setReferralSettings({ ...referralSettings, inviterBonus: parseFloat(e.target.value) })}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-400 uppercase mb-1">New User Bonus (BDT)</label>
+                      <input 
+                        type="number" 
+                        className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-500"
+                        value={referralSettings.newUserBonus}
+                        onChange={(e) => setReferralSettings({ ...referralSettings, newUserBonus: parseFloat(e.target.value) })}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Referral Limit (Per User)</label>
+                    <input 
+                      type="number" 
+                      className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-500"
+                      value={referralSettings.referralLimit}
+                      onChange={(e) => setReferralSettings({ ...referralSettings, referralLimit: parseInt(e.target.value) })}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                    <div>
+                      <p className="text-sm font-bold text-gray-900">Require First Task</p>
+                      <p className="text-[10px] text-gray-500">Reward only after new user completes their first task</p>
+                    </div>
+                    <button 
+                      onClick={() => setReferralSettings({ ...referralSettings, requireFirstTask: !referralSettings.requireFirstTask })}
+                      className={`w-12 h-6 rounded-full transition-colors relative ${referralSettings.requireFirstTask ? 'bg-emerald-500' : 'bg-gray-300'}`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${referralSettings.requireFirstTask ? 'left-7' : 'left-1'}`} />
+                    </button>
+                  </div>
+
+                  <Button 
+                    className="w-full py-4"
+                    onClick={async () => {
+                      setProcessing('referralSettings');
+                      try {
+                        await setDoc(doc(db, 'referralSettings', 'global'), referralSettings);
+                        alert('Referral settings updated successfully');
+                      } catch (error) {
+                        alert('Error updating referral settings');
+                      } finally {
+                        setProcessing(null);
+                      }
+                    }}
+                    disabled={processing === 'referralSettings'}
+                  >
+                    {processing === 'referralSettings' ? <Loader2 className="animate-spin mx-auto" /> : 'Save Referral Settings'}
+                  </Button>
+                </div>
+              </Card>
+
+              <Card className="p-6 bg-amber-50 border-amber-100">
+                <div className="flex gap-3">
+                  <Shield size={20} className="text-amber-600 shrink-0" />
+                  <div>
+                    <p className="text-sm font-bold text-amber-900">Level System (Fixed)</p>
+                    <p className="text-xs text-amber-700 mt-1 leading-relaxed">
+                      The level system is currently set to:
+                      <br />• 5 Referrals: 10 BDT Bonus
+                      <br />• 10 Referrals: 25 BDT Bonus
+                      <br />• 20 Referrals: 60 BDT Bonus
+                    </p>
+                  </div>
+                </div>
+              </Card>
             </div>
           )}
         </div>
