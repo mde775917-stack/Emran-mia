@@ -15,6 +15,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const [showReferModal, setShowReferModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showSupportModal, setShowSupportModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [hasUnreadNotices, setHasUnreadNotices] = useState(false);
   const [claiming, setClaiming] = useState(false);
@@ -106,10 +107,22 @@ const Profile = () => {
     }
   };
 
+  const handleWhatsAppSupport = (phone: string) => {
+    const userId = profile?.eeId;
+    const message = `Hello Admin, I need support regarding my EarnEase account. My User ID is ${userId}. Please assist me.`;
+    const encodedMessage = encodeURIComponent(message);
+    const cleanPhone = phone.replace(/\+/g, '').replace(/\s+/g, '').replace(/-/g, '');
+    window.open(`https://wa.me/${cleanPhone}?text=${encodedMessage}`, '_blank');
+  };
+
   const menuItems = [
     { icon: Settings, label: 'Account Settings', path: '/settings' },
-    { icon: Bell, label: 'Notifications', path: '/notifications' },
-    // { icon: HelpCircle, label: 'Help & Support', path: '/support' },
+    { 
+      icon: HelpCircle, 
+      label: 'Admin Support', 
+      subtitle: 'Message admins on WhatsApp',
+      onClick: () => setShowSupportModal(true) 
+    },
   ];
 
   return (
@@ -205,12 +218,19 @@ const Profile = () => {
 
       <div className="space-y-3 mb-8">
         {menuItems.map((item) => (
-          <Card key={item.label} className="p-4 flex justify-between items-center hover:bg-gray-50 transition-colors cursor-pointer">
+          <Card 
+            key={item.label} 
+            className="p-4 flex justify-between items-center hover:bg-gray-50 transition-colors cursor-pointer"
+            onClick={() => item.onClick ? item.onClick() : item.path && navigate(item.path)}
+          >
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-600">
                 <item.icon size={20} />
               </div>
-              <span className="font-semibold text-sm text-gray-900">{item.label}</span>
+              <div>
+                <p className="font-semibold text-sm text-gray-900">{item.label}</p>
+                {item.subtitle && <p className="text-[10px] text-gray-500">{item.subtitle}</p>}
+              </div>
             </div>
             <ChevronRight size={18} className="text-gray-400" />
           </Card>
@@ -341,6 +361,52 @@ const Profile = () => {
                   Close
                 </Button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showSupportModal && (
+          <div className="fixed inset-0 bg-black/50 z-[100] flex items-end justify-center">
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              className="bg-white w-full max-w-md rounded-t-[32px] p-8 pb-12"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Admin Support</h2>
+                <button onClick={() => setShowSupportModal(false)} className="text-gray-400">
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {[
+                  { name: 'ADMIN SANUAR', phone: '8801767525065' },
+                  { name: 'ADMIN FARHANA', phone: '8801568830976' },
+                  { name: 'ADMIN JARIN', phone: '8801754726838' }
+                ].map((admin) => (
+                  <Card 
+                    key={admin.name} 
+                    className="p-4 flex justify-between items-center hover:bg-emerald-50 transition-colors cursor-pointer border-emerald-50"
+                    onClick={() => handleWhatsAppSupport(admin.phone)}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+                        <User size={20} />
+                      </div>
+                      <span className="font-bold text-sm text-gray-900">{admin.name}</span>
+                    </div>
+                    <ChevronRight size={18} className="text-emerald-400" />
+                  </Card>
+                ))}
+              </div>
+
+              <Button variant="outline" onClick={() => setShowSupportModal(false)} className="w-full py-4 mt-6">
+                Close
+              </Button>
             </motion.div>
           </div>
         )}
