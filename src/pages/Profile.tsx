@@ -19,6 +19,7 @@ const Profile = () => {
   const [copied, setCopied] = useState(false);
   const [hasUnreadNotices, setHasUnreadNotices] = useState(false);
   const [claiming, setClaiming] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -132,8 +133,21 @@ const Profile = () => {
       </header>
 
       <Card className="flex flex-col items-center text-center mb-8">
-        <div className="w-24 h-24 rounded-3xl bg-emerald-600 flex items-center justify-center text-white font-bold text-3xl mb-4 shadow-lg shadow-emerald-200">
-          {profile.displayName?.[0] || '?'}
+        <div className="w-24 h-24 rounded-3xl bg-emerald-600 flex items-center justify-center text-white font-bold text-3xl mb-4 shadow-lg shadow-emerald-200 overflow-hidden">
+          {!imageError ? (
+            <img 
+              src={profile.isAdmin 
+                ? "https://i.ibb.co/vC09VyH4/1000005618.jpg" 
+                : "https://i.ibb.co/Lzy0RKJx/1000005617.jpg"
+              } 
+              alt="Profile"
+              className="w-full h-full object-cover"
+              referrerPolicy="no-referrer"
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            profile.displayName?.[0] || '?'
+          )}
         </div>
         <h2 className="text-xl font-bold text-gray-900">{profile.displayName}</h2>
         <p className="text-gray-500 text-sm">{profile.email}</p>
