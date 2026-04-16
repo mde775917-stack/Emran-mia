@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Card, Button } from '../components/UI';
-import { Shield, Users, FileText, Loader2, UserPlus, UserMinus, Clock, Search, CreditCard, Wallet, Smartphone, Mail, ShoppingBag, BarChart3, ChevronRight, ArrowLeft, Filter, Calendar, Globe } from 'lucide-react';
+import { Shield, Users, FileText, Loader2, UserPlus, UserMinus, Clock, Search, CreditCard, Wallet, Smartphone, Mail, ShoppingBag, BarChart3, ChevronRight, ArrowLeft, Filter, Calendar, Globe, ShieldAlert } from 'lucide-react';
 import { collection, query, getDocs, doc, updateDoc, where, orderBy, limit, Timestamp, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { UserProfile, ActivationLog, AdminLog, WithdrawRequest, TopupRequest, RechargeRequest, GmailSaleRequest, Product } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 
-type CEOTab = 'admins' | 'users' | 'withdraws' | 'topups' | 'recharges' | 'gmailSales' | 'products' | 'adminActivity' | 'dailyTaskSettings' | 'referralSettings';
+type CEOTab = 'ceos' | 'admins' | 'users' | 'withdraws' | 'topups' | 'recharges' | 'gmailSales' | 'products' | 'adminActivity' | 'dailyTaskSettings' | 'referralSettings';
 
 const CEOPanel = () => {
   const { profile } = useAuth();
-  const [activeTab, setActiveTab] = useState<CEOTab>('admins');
+  const [activeTab, setActiveTab] = useState<CEOTab>('ceos');
+  const [ceos, setCeos] = useState<UserProfile[]>([]);
   const [admins, setAdmins] = useState<UserProfile[]>([]);
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [withdraws, setWithdraws] = useState<WithdrawRequest[]>([]);
@@ -50,12 +51,20 @@ const CEOPanel = () => {
   const [dateRange, setDateRange] = useState<{ start: string, end: string }>({ start: '', end: '' });
 
   useEffect(() => {
-    if (profile?.eeId !== 'ES-556378') return;
+    if (profile?.role !== 'ceo') return;
 
     const fetchData = async () => {
       setLoading(true);
       try {
-        if (activeTab === 'admins') {
+        if (activeTab === 'ceos') {
+          const q = query(collection(db, 'users'), where('role', '==', 'ceo'));
+          const snap = await getDocs(q);
+          setCeos(snap.docs.map(doc => ({ ...doc.data(), uid: doc.id } as UserProfile)));
+
+          const uq = query(collection(db, 'users'), where('role', 'in', ['admin', 'user']), limit(50));
+          const usnap = await getDocs(uq);
+          setAllUsers(usnap.docs.map(doc => ({ ...doc.data(), uid: doc.id } as UserProfile)));
+        } else if (activeTab === 'admins') {
           const q = query(collection(db, 'users'), where('role', '==', 'admin'));
           const snap = await getDocs(q);
           setAdmins(snap.docs.map(doc => ({ ...doc.data(), uid: doc.id } as UserProfile)));
@@ -159,18 +168,22 @@ const CEOPanel = () => {
     }
   };
 
-  const updateRole = async (uid: string, newRole: 'user' | 'admin') => {
-    if (profile?.eeId !== 'ES-556378') return;
+  const updateRole = async (uid: string, newRole: 'user' | 'admin' | 'ceo') => {
+    if (profile?.role !== 'ceo') return;
     setProcessing(uid);
     try {
       await updateDoc(doc(db, 'users', uid), { 
         role: newRole,
-        isAdmin: newRole === 'admin'
+        isAdmin: newRole === 'admin' || newRole === 'ceo'
       });
       
       alert(`User role updated to ${newRole}`);
-      // Refresh admins list if on admins tab
-      if (activeTab === 'admins') {
+      // Refresh lists
+      if (activeTab === 'ceos') {
+        const q = query(collection(db, 'users'), where('role', '==', 'ceo'));
+        const snap = await getDocs(q);
+        setCeos(snap.docs.map(doc => ({ ...doc.data(), uid: doc.id } as UserProfile)));
+      } else if (activeTab === 'admins') {
         const q = query(collection(db, 'users'), where('role', '==', 'admin'));
         const snap = await getDocs(q);
         setAdmins(snap.docs.map(doc => ({ ...doc.data(), uid: doc.id } as UserProfile)));
@@ -197,13 +210,13 @@ const CEOPanel = () => {
     return matchesAction && matchesStatus && matchesDate;
   });
 
-  if (profile?.eeId !== 'ES-556378') {
+  if (profile?.role !== 'ceo') {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 text-center">
         <div>
           <Shield size={64} className="text-red-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold">CEO Access Only</h1>
-          <p className="text-gray-500 mt-2">This panel is restricted to the Superadmin.</p>
+          <p className="text-gray-500 mt-2">This panel is restricted to CEOs.</p>
         </div>
       </div>
     );
@@ -349,6 +362,7 @@ const CEOPanel = () => {
   }
 
   const tabs: { id: CEOTab, label: string, icon: any }[] = [
+    { id: 'ceos', label: 'CEOs', icon: ShieldAlert },
     { id: 'admins', label: 'Admins', icon: Shield },
     { id: 'users', label: 'Users', icon: Users },
     { id: 'withdraws', label: 'Withdraws', icon: CreditCard },
@@ -389,6 +403,88 @@ const CEOPanel = () => {
         </div>
       ) : (
         <div className="space-y-4">
+          {activeTab === 'ceos' && (
+            <div className="space-y-6">
+              <section>
+                <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <ShieldAlert size={18} className="text-blue-600" />
+                  Current CEOs
+                </h3>
+                <div className="space-y-3">
+                  {ceos.length === 0 ? (
+                    <p className="text-gray-500 text-sm italic">No CEOs found</p>
+                  ) : (
+                    ceos.map(ceo => (
+                      <Card key={ceo.uid} className="p-4">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="font-bold text-gray-900">{ceo.displayName}</p>
+                            <p className="text-xs text-gray-500">{ceo.email}</p>
+                            <p className="text-[10px] text-blue-600 font-bold mt-1">ID: {ceo.eeId}</p>
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            className="py-2 px-4 text-xs border-red-100 text-red-600 hover:bg-red-50"
+                            onClick={() => updateRole(ceo.uid, 'admin')}
+                            disabled={processing === ceo.uid || ceo.uid === profile.uid}
+                          >
+                            {processing === ceo.uid ? <Loader2 className="animate-spin" size={16} /> : <UserMinus size={16} />}
+                            <span className="ml-1">Remove CEO</span>
+                          </Button>
+                        </div>
+                      </Card>
+                    ))
+                  )}
+                </div>
+              </section>
+
+              <section>
+                <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <UserPlus size={18} className="text-emerald-600" />
+                  Promote to CEO
+                </h3>
+                <div className="relative mb-4">
+                  <input
+                    type="text"
+                    placeholder="Search users/admins by ID or Name..."
+                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                </div>
+                <div className="space-y-3">
+                  {allUsers
+                    .filter(u => 
+                      u.role !== 'ceo' && (
+                        (u.displayName || "").toLowerCase().includes((searchQuery || "").toLowerCase()) || 
+                        (u.eeId || "").toLowerCase().includes((searchQuery || "").toLowerCase())
+                      )
+                    )
+                    .map(user => (
+                      <Card key={user.uid} className="p-4">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="font-bold text-gray-900">{user.displayName}</p>
+                            <p className="text-xs text-gray-500">{user.email}</p>
+                            <p className="text-[10px] text-emerald-600 font-bold mt-1">ID: {user.eeId} ({user.role})</p>
+                          </div>
+                          <Button 
+                            className="py-2 px-4 text-xs"
+                            onClick={() => updateRole(user.uid, 'ceo')}
+                            disabled={processing === user.uid}
+                          >
+                            {processing === user.uid ? <Loader2 className="animate-spin" size={16} /> : <UserPlus size={16} />}
+                            <span className="ml-1">Make CEO</span>
+                          </Button>
+                        </div>
+                      </Card>
+                    ))}
+                </div>
+              </section>
+            </div>
+          )}
+
           {activeTab === 'admins' && (
             <div className="space-y-6">
               <section>

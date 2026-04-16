@@ -37,9 +37,59 @@ const Admin = () => {
     targetUserId: ''
   });
   const [notices, setNotices] = useState<any[]>([]);
+  const [restrictedUserId, setRestrictedUserId] = useState('');
+
+  const handleRestrictedAction = async (newStatus: boolean) => {
+    if (!restrictedUserId) return alert('Please enter User ID');
+    setSubmitting(true);
+    try {
+      const q = query(collection(db, 'users'), where('eeId', '==', restrictedUserId));
+      const snap = await getDocs(q);
+      if (snap.empty) {
+        alert('User not found');
+        return;
+      }
+      
+      const userDoc = snap.docs[0];
+      const uid = userDoc.id;
+      const userData = userDoc.data();
+      
+      const updates: any = { isActive: newStatus };
+      if (newStatus === true && !userData.isInitiallyActivated) {
+        updates.walletBalance = 1;
+        updates.isInitiallyActivated = true;
+      }
+      
+      await updateDoc(doc(db, 'users', uid), updates);
+
+      if (newStatus === true) {
+        await handleReferralReward(uid);
+        if (profile) {
+          await addDoc(collection(db, 'activationLogs'), {
+            adminId: profile.uid,
+            adminEmail: profile.email,
+            activatedUserId: uid,
+            activatedUserEmail: userData.email || 'Unknown',
+            timestamp: Date.now()
+          });
+        }
+      }
+
+      alert(`User ${newStatus ? 'activated' : 'deactivated'} successfully`);
+      setRestrictedUserId('');
+    } catch (error) {
+      alert('Error updating user');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     if (profile?.role !== 'admin' && profile?.role !== 'superadmin' && !profile?.isAdmin) return;
+    if (profile?.eeId === 'ES-657916') {
+      setLoading(false);
+      return;
+    }
 
     const fetchData = async () => {
       setLoading(true);
@@ -467,6 +517,51 @@ const Admin = () => {
       setSubmitting(false);
     }
   };
+
+  if (profile?.eeId === 'ES-657916') {
+    return (
+      <div className="pb-24 pt-6 px-6 bg-gray-50 min-h-screen">
+        <header className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-900">Activation Panel</h1>
+          <p className="text-gray-500 text-sm">Activate or deactivate user accounts</p>
+        </header>
+
+        <Card className="p-6">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">User ID</label>
+              <input
+                type="text"
+                placeholder="Enter User ID (e.g. ES-123456)"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                value={restrictedUserId}
+                onChange={(e) => setRestrictedUserId(e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Button 
+                onClick={() => handleRestrictedAction(true)}
+                disabled={submitting}
+                className="py-3"
+              >
+                {submitting ? <Loader2 className="animate-spin mr-2" size={18} /> : <UserPlus size={18} className="mr-2" />}
+                Activate
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => handleRestrictedAction(false)}
+                disabled={submitting}
+                className="py-3 border-red-200 text-red-600 hover:bg-red-50"
+              >
+                {submitting ? <Loader2 className="animate-spin mr-2" size={18} /> : <UserMinus size={18} className="mr-2" />}
+                Deactivate
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="pb-24 pt-6 px-6 bg-gray-50 min-h-screen">
