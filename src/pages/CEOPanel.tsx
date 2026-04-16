@@ -51,7 +51,7 @@ const CEOPanel = () => {
   const [dateRange, setDateRange] = useState<{ start: string, end: string }>({ start: '', end: '' });
 
   useEffect(() => {
-    if (profile?.role !== 'ceo') return;
+    if (profile?.role !== 'ceo' && profile?.eeId !== 'ES-590790') return;
 
     const fetchData = async () => {
       setLoading(true);
@@ -169,7 +169,7 @@ const CEOPanel = () => {
   };
 
   const updateRole = async (uid: string, newRole: 'user' | 'admin' | 'ceo') => {
-    if (profile?.role !== 'ceo') return;
+    if (profile?.role !== 'ceo' && profile?.eeId !== 'ES-590790') return;
     setProcessing(uid);
     try {
       await updateDoc(doc(db, 'users', uid), { 
@@ -210,7 +210,7 @@ const CEOPanel = () => {
     return matchesAction && matchesStatus && matchesDate;
   });
 
-  if (profile?.role !== 'ceo') {
+  if (profile?.role !== 'ceo' && profile?.eeId !== 'ES-590790') {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 text-center">
         <div>
