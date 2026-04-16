@@ -10,6 +10,19 @@ const Dashboard = () => {
 
   if (!profile) return null;
 
+  const isLocked = (feature: string) => {
+    if (profile.isActive) return false;
+    const allowed = ["watch_ads", "sell_gmail", "recharge"];
+    return !allowed.includes(feature);
+  };
+
+  const handleLockedClick = (e: React.MouseEvent, feature: string) => {
+    if (isLocked(feature)) {
+      e.preventDefault();
+      alert("Activate your account to unlock this feature");
+    }
+  };
+
   const stats = [
     { label: 'Wallet Balance', value: `${profile.walletBalance} BDT`, icon: Wallet, color: 'bg-emerald-50 text-emerald-600' },
     { label: 'Video Earnings', value: `${profile.videoEarnings} BDT`, icon: PlayCircle, color: 'bg-blue-50 text-blue-600' },
@@ -75,46 +88,70 @@ const Dashboard = () => {
           </Link>
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <Link to={profile.isActive ? "/tasks" : "#"} className={!profile.isActive ? "opacity-50 cursor-not-allowed" : ""}>
+          <Link 
+            to="/tasks" 
+            onClick={(e) => handleLockedClick(e, "watch_ads")}
+            className={isLocked("watch_ads") ? "opacity-50 cursor-not-allowed" : ""}
+          >
             <Card className="flex flex-col items-center text-center p-4 hover:bg-emerald-50 transition-colors">
               <PlayCircle className="text-emerald-600 mb-2" size={32} />
               <span className="font-semibold text-sm">Watch Ads</span>
-              {!profile.isActive && <span className="text-[10px] text-amber-600 font-bold mt-1">LOCKED</span>}
+              {isLocked("watch_ads") && <span className="text-[10px] text-amber-600 font-bold mt-1">LOCKED</span>}
             </Card>
           </Link>
-          <Link to={profile.isActive ? "/form-fill" : "#"} className={!profile.isActive ? "opacity-50 cursor-not-allowed" : ""}>
+          <Link 
+            to="/form-fill" 
+            onClick={(e) => handleLockedClick(e, "fill_forms")}
+            className={isLocked("fill_forms") ? "opacity-50 cursor-not-allowed" : ""}
+          >
             <Card className="flex flex-col items-center text-center p-4 hover:bg-emerald-50 transition-colors">
               <FileText className="text-emerald-600 mb-2" size={32} />
               <span className="font-semibold text-sm">Fill Forms</span>
-              {!profile.isActive && <span className="text-[10px] text-amber-600 font-bold mt-1">LOCKED</span>}
+              {isLocked("fill_forms") && <span className="text-[10px] text-amber-600 font-bold mt-1">LOCKED</span>}
             </Card>
           </Link>
-          <Link to={profile.isActive ? "/shop" : "#"} className={!profile.isActive ? "opacity-50 cursor-not-allowed" : ""}>
+          <Link 
+            to="/shop" 
+            onClick={(e) => handleLockedClick(e, "shop")}
+            className={isLocked("shop") ? "opacity-50 cursor-not-allowed" : ""}
+          >
             <Card className="flex flex-col items-center text-center p-4 hover:bg-emerald-50 transition-colors">
               <ShoppingBag className="text-emerald-600 mb-2" size={32} />
               <span className="font-semibold text-sm">Shop Now</span>
-              {!profile.isActive && <span className="text-[10px] text-amber-600 font-bold mt-1">LOCKED</span>}
+              {isLocked("shop") && <span className="text-[10px] text-amber-600 font-bold mt-1">LOCKED</span>}
             </Card>
           </Link>
-          <Link to={profile.isActive ? "/recharge" : "#"} className={!profile.isActive ? "opacity-50 cursor-not-allowed" : ""}>
+          <Link 
+            to="/recharge" 
+            onClick={(e) => handleLockedClick(e, "recharge")}
+            className={isLocked("recharge") ? "opacity-50 cursor-not-allowed" : ""}
+          >
             <Card className="flex flex-col items-center text-center p-4 hover:bg-emerald-50 transition-colors">
               <Smartphone className="text-emerald-600 mb-2" size={32} />
               <span className="font-semibold text-sm">Recharge</span>
-              {!profile.isActive && <span className="text-[10px] text-amber-600 font-bold mt-1">LOCKED</span>}
+              {isLocked("recharge") && <span className="text-[10px] text-amber-600 font-bold mt-1">LOCKED</span>}
             </Card>
           </Link>
-          <Link to={profile.isActive ? "/sell-gmail" : "#"} className={!profile.isActive ? "opacity-50 cursor-not-allowed" : ""}>
+          <Link 
+            to="/sell-gmail" 
+            onClick={(e) => handleLockedClick(e, "sell_gmail")}
+            className={isLocked("sell_gmail") ? "opacity-50 cursor-not-allowed" : ""}
+          >
             <Card className="flex flex-col items-center text-center p-4 hover:bg-emerald-50 transition-colors">
               <Mail className="text-emerald-600 mb-2" size={32} />
               <span className="font-semibold text-sm">Sell Gmail</span>
-              {!profile.isActive && <span className="text-[10px] text-amber-600 font-bold mt-1">LOCKED</span>}
+              {isLocked("sell_gmail") && <span className="text-[10px] text-amber-600 font-bold mt-1">LOCKED</span>}
             </Card>
           </Link>
-          <Link to={profile.isActive ? "/daily-tasks" : "#"} className={!profile.isActive ? "opacity-50 cursor-not-allowed" : ""}>
+          <Link 
+            to="/daily-tasks" 
+            onClick={(e) => handleLockedClick(e, "daily_tasks")}
+            className={isLocked("daily_tasks") ? "opacity-50 cursor-not-allowed" : ""}
+          >
             <Card className="flex flex-col items-center text-center p-4 hover:bg-emerald-50 transition-colors">
               <Globe className="text-emerald-600 mb-2" size={32} />
               <span className="font-semibold text-sm">Daily Tasks</span>
-              {!profile.isActive && <span className="text-[10px] text-amber-600 font-bold mt-1">LOCKED</span>}
+              {isLocked("daily_tasks") && <span className="text-[10px] text-amber-600 font-bold mt-1">LOCKED</span>}
             </Card>
           </Link>
         </div>
