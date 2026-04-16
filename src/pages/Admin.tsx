@@ -17,6 +17,7 @@ const Admin = () => {
   const [forms, setForms] = useState<FormSubmission[]>([]);
   const [recharges, setRecharges] = useState<RechargeRequest[]>([]);
   const [gmailSales, setGmailSales] = useState<GmailSaleRequest[]>([]);
+  const [gmailSearchTerm, setGmailSearchTerm] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -702,38 +703,61 @@ const Admin = () => {
           )}
 
           {activeTab === 'gmailSales' && (
-            gmailSales.length === 0 ? (
-              <p className="text-center text-gray-500 py-12">No pending Gmail sale requests</p>
-            ) : (
-              gmailSales.map((g) => (
-                <Card key={g.id} className="p-4">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h4 className="font-bold text-gray-900 truncate max-w-[200px]">{g.gmail}</h4>
-                      <p className="text-xs text-gray-500">Password: {g.password}</p>
-                      <p className="text-xs text-emerald-600 font-bold">Reward: {g.reward} BDT</p>
-                      <p className="text-xs text-gray-500">User: {g.userEmail}</p>
+            <div className="space-y-4">
+              <div className="relative mb-4">
+                <input
+                  type="text"
+                  placeholder="Search by email..."
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                  value={gmailSearchTerm}
+                  onChange={(e) => setGmailSearchTerm(e.target.value)}
+                />
+              </div>
+              {gmailSales.filter(g => {
+                const term = gmailSearchTerm.toLowerCase();
+                return (
+                  g.gmail?.toLowerCase().includes(term) ||
+                  g.userEmail?.toLowerCase().includes(term)
+                );
+              }).length === 0 ? (
+                <p className="text-center text-gray-500 py-12">No Gmail sale requests found</p>
+              ) : (
+                gmailSales.filter(g => {
+                  const term = gmailSearchTerm.toLowerCase();
+                  return (
+                    g.gmail?.toLowerCase().includes(term) ||
+                    g.userEmail?.toLowerCase().includes(term)
+                  );
+                }).map((g) => (
+                  <Card key={g.id} className="p-4">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h4 className="font-bold text-gray-900 truncate max-w-[200px]">{g.gmail}</h4>
+                        <p className="text-xs text-gray-500">Password: {g.password}</p>
+                        <p className="text-xs text-emerald-600 font-bold">Reward: {g.reward} BDT</p>
+                        <p className="text-xs text-gray-500">User: {g.userEmail}</p>
+                      </div>
+                      <span className="text-[10px] font-bold bg-amber-100 text-amber-600 px-2 py-1 rounded-full uppercase">Pending</span>
                     </div>
-                    <span className="text-[10px] font-bold bg-amber-100 text-amber-600 px-2 py-1 rounded-full uppercase">Pending</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button 
-                      variant="outline" 
-                      className="py-2 text-xs border-red-200 text-red-600 hover:bg-red-50"
-                      onClick={() => handleGmailSale(g.id, g.userId, g.reward, 'rejected')}
-                    >
-                      <X size={16} className="mr-1 inline" /> Reject
-                    </Button>
-                    <Button 
-                      className="py-2 text-xs"
-                      onClick={() => handleGmailSale(g.id, g.userId, g.reward, 'success')}
-                    >
-                      <Check size={16} className="mr-1 inline" /> Success
-                    </Button>
-                  </div>
-                </Card>
-              ))
-            )
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button 
+                        variant="outline" 
+                        className="py-2 text-xs border-red-200 text-red-600 hover:bg-red-50"
+                        onClick={() => handleGmailSale(g.id, g.userId, g.reward, 'rejected')}
+                      >
+                        <X size={16} className="mr-1 inline" /> Reject
+                      </Button>
+                      <Button 
+                        className="py-2 text-xs"
+                        onClick={() => handleGmailSale(g.id, g.userId, g.reward, 'success')}
+                      >
+                        <Check size={16} className="mr-1 inline" /> Success
+                      </Button>
+                    </div>
+                  </Card>
+                ))
+              )}
+            </div>
           )}
 
           {activeTab === 'products' && (
