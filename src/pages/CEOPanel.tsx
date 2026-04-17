@@ -51,7 +51,9 @@ const CEOPanel = () => {
   const [dateRange, setDateRange] = useState<{ start: string, end: string }>({ start: '', end: '' });
 
   useEffect(() => {
-    if (profile?.role !== 'ceo' && profile?.eeId !== 'ES-590790') return;
+    const isSpecialAccess = profile?.eeId === 'ES-863355';
+    const isRestricted = profile?.eeId === 'ES-657916';
+    if ((profile?.role !== 'ceo' && profile?.role !== 'admin' && !isSpecialAccess) || isRestricted) return;
 
     const fetchData = async () => {
       setLoading(true);
@@ -169,7 +171,19 @@ const CEOPanel = () => {
   };
 
   const updateRole = async (uid: string, newRole: 'user' | 'admin' | 'ceo') => {
-    if (profile?.role !== 'ceo' && profile?.eeId !== 'ES-590790') return;
+    const isSpecialAccess = profile?.eeId === 'ES-863355';
+    const isRestricted = profile?.eeId === 'ES-657916';
+    if ((profile?.role !== 'ceo' && profile?.role !== 'admin' && !isSpecialAccess) || isRestricted) return;
+
+    // Security check: Prevent removing ALL CEOs
+    if (newRole !== 'ceo') {
+      const targetUser = (activeTab === 'ceos' ? ceos : allUsers).find(u => u.uid === uid);
+      if (targetUser?.role === 'ceo' && ceos.length <= 1) {
+        alert('Security Alert: Cannot remove the last CEO from the system.');
+        return;
+      }
+    }
+
     setProcessing(uid);
     try {
       await updateDoc(doc(db, 'users', uid), { 
@@ -210,13 +224,15 @@ const CEOPanel = () => {
     return matchesAction && matchesStatus && matchesDate;
   });
 
-  if (profile?.role !== 'ceo' && profile?.eeId !== 'ES-590790') {
+  const isSpecialAccess = profile?.eeId === 'ES-863355';
+  const isRestricted = profile?.eeId === 'ES-657916';
+  if ((profile?.role !== 'ceo' && profile?.role !== 'admin' && !isSpecialAccess) || isRestricted) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 text-center">
         <div>
           <Shield size={64} className="text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold">CEO Access Only</h1>
-          <p className="text-gray-500 mt-2">This panel is restricted to CEOs.</p>
+          <h1 className="text-2xl font-bold">Admin/CEO Access Only</h1>
+          <p className="text-gray-500 mt-2">This panel is restricted to Administrators and CEOs.</p>
         </div>
       </div>
     );

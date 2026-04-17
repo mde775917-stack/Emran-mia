@@ -264,7 +264,7 @@ const Profile = () => {
           </Link>
         )}
 
-        {(profile.role === 'ceo' || profile.eeId === 'ES-590790') && (
+        {((profile.role === 'ceo' || profile.role === 'admin' || profile.eeId === 'ES-863355') && profile.eeId !== 'ES-657916') && (
           <Link to="/ceo-panel">
             <Card className="p-4 flex justify-between items-center hover:bg-blue-50 transition-colors cursor-pointer border-blue-100 mt-4">
               <div className="flex items-center gap-4">
