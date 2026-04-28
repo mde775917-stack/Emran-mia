@@ -7,9 +7,13 @@ import { db } from '../firebase';
 import { UserProfile, WithdrawRequest, Product, TopupRequest, FormSubmission, RechargeRequest, GmailSaleRequest } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { handleReferralReward } from '../lib/referral';
+import { MAINTENANCE_MODE } from '../constants';
+import { Lock } from 'lucide-react';
 
 const Admin = () => {
   const { profile } = useAuth();
+  const isCeo = profile?.role === 'ceo' || profile?.eeId === 'ES-863355';
+  const isRestricted = MAINTENANCE_MODE && !isCeo;
   const [activeTab, setActiveTab] = useState<'users' | 'withdraws' | 'products' | 'topups' | 'forms' | 'recharges' | 'gmailSales' | 'notices'>('users');
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [withdraws, setWithdraws] = useState<WithdrawRequest[]>([]);
@@ -583,12 +587,18 @@ const Admin = () => {
         ].map((tab) => (
           <button
             key={tab.id}
-            onClick={() => handleTabChange(tab.id as any)}
+            onClick={() => {
+              if (isRestricted) {
+                alert("সাময়িক সমস্যার কারণে সাইটটি বন্ধ রয়েছে");
+                return;
+              }
+              handleTabChange(tab.id as any);
+            }}
             className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-semibold transition-all whitespace-nowrap ${
               activeTab === tab.id ? 'bg-emerald-600 text-white' : 'bg-white text-gray-600 border border-gray-100'
-            }`}
+            } ${isRestricted ? 'opacity-50' : ''}`}
           >
-            <tab.icon size={18} />
+            {isRestricted ? <Lock size={16} /> : <tab.icon size={18} />}
             {tab.label}
           </button>
         ))}

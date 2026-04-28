@@ -7,9 +7,12 @@ import { db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import { GmailSaleRequest } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
+import { MAINTENANCE_MODE } from '../constants';
 
 const SellGmail = () => {
   const { profile } = useAuth();
+  const isCeo = profile?.role === 'ceo' || profile?.eeId === 'ES-863355';
+  const isRestricted = MAINTENANCE_MODE && !isCeo;
   const [gmail, setGmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -37,6 +40,11 @@ const SellGmail = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile || !gmail || !password) return;
+
+    if (isRestricted) {
+      alert("সাময়িক সমস্যার কারণে সাইটটি বন্ধ রয়েছে");
+      return;
+    }
 
     setLoading(true);
     try {

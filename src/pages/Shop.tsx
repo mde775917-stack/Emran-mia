@@ -5,8 +5,13 @@ import { ShoppingCart, Search, Filter, Loader2 } from 'lucide-react';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Product } from '../types';
+import { MAINTENANCE_MODE } from '../constants';
+import { Lock } from 'lucide-react';
 
 const Shop = () => {
+  const { profile } = useAuth();
+  const isCeo = profile?.role === 'ceo' || profile?.eeId === 'ES-863355';
+  const isRestricted = MAINTENANCE_MODE && !isCeo;
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState<Product[]>([]);
@@ -29,6 +34,10 @@ const Shop = () => {
   }, []);
 
   const addToCart = (product: Product) => {
+    if (isRestricted) {
+      alert("সাময়িক সমস্যার কারণে সাইটটি বন্ধ রয়েছে");
+      return;
+    }
     setCart([...cart, product]);
     alert(`${product.name} added to cart!`);
   };
@@ -81,10 +90,12 @@ const Shop = () => {
                 <p className="text-emerald-600 font-bold mt-1">{product.price} BDT</p>
                 <Button 
                   variant="secondary" 
-                  className="mt-3 py-2 text-xs w-full"
+                  className={`mt-3 py-2 text-xs w-full ${isRestricted ? 'opacity-50' : ''}`}
                   onClick={() => addToCart(product)}
+                  disabled={isRestricted}
                 >
-                  Add to Cart
+                  {isRestricted ? <Lock size={12} className="inline mr-1" /> : null}
+                  {isRestricted ? 'Locked' : 'Add to Cart'}
                 </Button>
               </div>
             </Card>

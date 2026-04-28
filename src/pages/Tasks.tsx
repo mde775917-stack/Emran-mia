@@ -6,6 +6,8 @@ import { collection, query, where, getDocs, addDoc, doc, updateDoc, increment, T
 import { db } from '../firebase';
 import { motion, AnimatePresence } from 'motion/react';
 import { handleReferralReward } from '../lib/referral';
+import { MAINTENANCE_MODE } from '../constants';
+import { Lock } from 'lucide-react';
 
 const Tasks = () => {
   const { profile, refreshProfile } = useAuth();
@@ -54,6 +56,14 @@ const Tasks = () => {
   }, [cooldown]);
 
   const handleWatchAd = () => {
+    const isCeo = profile?.role === 'ceo' || profile?.eeId === 'ES-863355';
+    const isRestricted = MAINTENANCE_MODE && !isCeo;
+    
+    if (isRestricted) {
+      alert("সাময়িক সমস্যার কারণে সাইটটি বন্ধ রয়েছে");
+      return;
+    }
+
     if (!profile?.isActive) {
       alert("Your account must be activated to earn rewards.");
       return;

@@ -7,9 +7,12 @@ import { db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import { RechargeRequest } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
+import { MAINTENANCE_MODE } from '../constants';
 
 const Recharge = () => {
   const { profile } = useAuth();
+  const isCeo = profile?.role === 'ceo' || profile?.eeId === 'ES-863355';
+  const isRestricted = MAINTENANCE_MODE && !isCeo;
   const [mobileNumber, setMobileNumber] = useState('');
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
@@ -35,6 +38,11 @@ const Recharge = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile || !mobileNumber || !amount) return;
+
+    if (isRestricted) {
+      alert("সাময়িক সমস্যার কারণে সাইটটি বন্ধ রয়েছে");
+      return;
+    }
 
     const rechargeAmount = Number(amount);
     if (rechargeAmount < 50) {

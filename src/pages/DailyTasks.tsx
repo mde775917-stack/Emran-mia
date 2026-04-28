@@ -8,9 +8,13 @@ import { DailyTaskSettings, UserDailyTask } from '../types';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { handleReferralReward } from '../lib/referral';
+import { MAINTENANCE_MODE } from '../constants';
+import { Lock } from 'lucide-react';
 
 const DailyTasks = () => {
   const { profile, user, refreshProfile } = useAuth();
+  const isCeo = profile?.role === 'ceo' || profile?.eeId === 'ES-863355';
+  const isRestricted = MAINTENANCE_MODE && !isCeo;
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState<DailyTaskSettings>({
@@ -72,6 +76,11 @@ const DailyTasks = () => {
 
   const handleTaskClick = async (taskId: number) => {
     if (!user || !profile || !userProgress || userProgress.completedTasks.includes(taskId)) return;
+
+    if (isRestricted) {
+      alert("সাময়িক সমস্যার কারণে সাইটটি বন্ধ রয়েছে");
+      return;
+    }
     
     setClaiming(taskId);
     try {
@@ -195,12 +204,18 @@ const DailyTasks = () => {
                 ) : (
                   <Button 
                     size="sm" 
-                    onClick={() => handleTaskClick(taskId)}
-                    disabled={isClaiming}
+                    onClick={() => {
+                      if (isRestricted) {
+                        alert("সাময়িক সমস্যার কারণে সাইটটি বন্ধ রয়েছে");
+                        return;
+                      }
+                      handleTaskClick(taskId);
+                    }}
+                    disabled={isClaiming || isRestricted}
                     className="flex items-center gap-2"
                   >
-                    {isClaiming ? <Loader2 size={16} className="animate-spin" /> : <ExternalLink size={16} />}
-                    Visit
+                    {isClaiming ? <Loader2 size={16} className="animate-spin" /> : isRestricted ? <Lock size={16} /> : <ExternalLink size={16} />}
+                    {isRestricted ? 'Locked' : 'Visit'}
                   </Button>
                 )}
               </Card>

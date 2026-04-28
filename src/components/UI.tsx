@@ -1,6 +1,9 @@
 import React from 'react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { MAINTENANCE_MODE } from '../constants';
+import { useAuth } from '../context/AuthContext';
+import { Lock } from 'lucide-react';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -36,6 +39,10 @@ export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { 
   variant = 'primary',
   ...props 
 }) => {
+  const { profile } = useAuth();
+  const isCeo = profile?.role === 'ceo' || profile?.eeId === 'ES-863355';
+  const isRestricted = MAINTENANCE_MODE && !isCeo;
+
   const variants = {
     primary: 'bg-emerald-600 text-white hover:bg-emerald-700',
     secondary: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200',
@@ -46,12 +53,14 @@ export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { 
   return (
     <button 
       className={cn(
-        "px-6 py-3 rounded-2xl font-semibold transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:active:scale-100",
+        "px-6 py-3 rounded-2xl font-semibold transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2",
         variants[variant],
+        isRestricted && "opacity-50",
         className
       )}
       {...props}
     >
+      {isRestricted && <Lock size={16} />}
       {children}
     </button>
   );

@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Card, Button } from '../components/UI';
-import { Wallet, ArrowDownCircle, ArrowUpCircle, Clock, CheckCircle2, XCircle, Loader2, ReceiptText } from 'lucide-react';
+import { Wallet, ArrowDownCircle, ArrowUpCircle, Clock, CheckCircle2, XCircle, Loader2, ReceiptText, Lock } from 'lucide-react';
 import { collection, query, where, getDocs, addDoc, doc, updateDoc, increment, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { WithdrawRequest, WalletTransaction } from '../types';
 import { motion } from 'motion/react';
+import { MAINTENANCE_MODE } from '../constants';
 
 const WalletPage = () => {
   const { profile, refreshProfile } = useAuth();
+  const isCeo = profile?.role === 'ceo' || profile?.eeId === 'ES-863355';
+  const isRestricted = MAINTENANCE_MODE && !isCeo;
   const [withdraws, setWithdraws] = useState<WithdrawRequest[]>([]);
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,8 +126,16 @@ const WalletPage = () => {
             <Button 
               variant="secondary" 
               className="w-full bg-white text-emerald-600 hover:bg-emerald-50"
-              onClick={() => setShowWithdraw(true)}
+              onClick={() => {
+                if (isRestricted) {
+                  alert("সাময়িক সমস্যার কারণে সাইটটি বন্ধ রয়েছে");
+                } else {
+                  setShowWithdraw(true);
+                }
+              }}
+              disabled={isRestricted}
             >
+              {isRestricted && <Lock size={16} className="mr-2 inline" />}
               Withdraw Funds
             </Button>
             <Button 

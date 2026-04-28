@@ -1,16 +1,20 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Card, Button } from '../components/UI';
-import { Wallet, TrendingUp, Users, PlayCircle, FileText, ShoppingBag, ArrowUpRight, Smartphone, Mail, Globe } from 'lucide-react';
+import { Wallet, TrendingUp, Users, PlayCircle, FileText, ShoppingBag, ArrowUpRight, Smartphone, Mail, Globe, Lock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
+import { MAINTENANCE_MODE } from '../constants';
 
 const Dashboard = () => {
   const { profile } = useAuth();
 
   if (!profile) return null;
 
+  const isCeo = profile.role === 'ceo' || profile.eeId === 'ES-863355';
+
   const isLocked = (feature: string) => {
+    if (MAINTENANCE_MODE && !isCeo) return true;
     if (profile.isActive) return false;
     const allowed = ["watch_ads", "sell_gmail", "recharge"];
     return !allowed.includes(feature);
@@ -19,7 +23,11 @@ const Dashboard = () => {
   const handleLockedClick = (e: React.MouseEvent, feature: string) => {
     if (isLocked(feature)) {
       e.preventDefault();
-      alert("Activate your account to unlock this feature");
+      if (MAINTENANCE_MODE && !isCeo) {
+        alert("সাময়িক সমস্যার কারণে সাইটটি বন্ধ রয়েছে");
+      } else {
+        alert("Activate your account to unlock this feature");
+      }
     }
   };
 
@@ -93,10 +101,15 @@ const Dashboard = () => {
             onClick={(e) => handleLockedClick(e, "watch_ads")}
             className={isLocked("watch_ads") ? "opacity-50 cursor-not-allowed" : ""}
           >
-            <Card className="flex flex-col items-center text-center p-4 hover:bg-emerald-50 transition-colors">
+            <Card className="flex flex-col items-center text-center p-4 hover:bg-emerald-50 transition-colors relative">
               <PlayCircle className="text-emerald-600 mb-2" size={32} />
               <span className="font-semibold text-sm">Watch Ads</span>
-              {isLocked("watch_ads") && <span className="text-[10px] text-amber-600 font-bold mt-1">LOCKED</span>}
+              {isLocked("watch_ads") && (
+                <div className="mt-1 flex items-center gap-1">
+                  <Lock size={10} className="text-amber-600" />
+                  <span className="text-[10px] text-amber-600 font-bold uppercase">Locked</span>
+                </div>
+              )}
             </Card>
           </Link>
           <Link 
@@ -104,10 +117,15 @@ const Dashboard = () => {
             onClick={(e) => handleLockedClick(e, "fill_forms")}
             className={isLocked("fill_forms") ? "opacity-50 cursor-not-allowed" : ""}
           >
-            <Card className="flex flex-col items-center text-center p-4 hover:bg-emerald-50 transition-colors">
+            <Card className="flex flex-col items-center text-center p-4 hover:bg-emerald-50 transition-colors relative">
               <FileText className="text-emerald-600 mb-2" size={32} />
               <span className="font-semibold text-sm">Fill Forms</span>
-              {isLocked("fill_forms") && <span className="text-[10px] text-amber-600 font-bold mt-1">LOCKED</span>}
+              {isLocked("fill_forms") && (
+                <div className="mt-1 flex items-center gap-1">
+                  <Lock size={10} className="text-amber-600" />
+                  <span className="text-[10px] text-amber-600 font-bold uppercase">Locked</span>
+                </div>
+              )}
             </Card>
           </Link>
           <Link 
@@ -115,10 +133,15 @@ const Dashboard = () => {
             onClick={(e) => handleLockedClick(e, "shop")}
             className={isLocked("shop") ? "opacity-50 cursor-not-allowed" : ""}
           >
-            <Card className="flex flex-col items-center text-center p-4 hover:bg-emerald-50 transition-colors">
+            <Card className="flex flex-col items-center text-center p-4 hover:bg-emerald-50 transition-colors relative">
               <ShoppingBag className="text-emerald-600 mb-2" size={32} />
               <span className="font-semibold text-sm">Shop Now</span>
-              {isLocked("shop") && <span className="text-[10px] text-amber-600 font-bold mt-1">LOCKED</span>}
+              {isLocked("shop") && (
+                <div className="mt-1 flex items-center gap-1">
+                  <Lock size={10} className="text-amber-600" />
+                  <span className="text-[10px] text-amber-600 font-bold uppercase">Locked</span>
+                </div>
+              )}
             </Card>
           </Link>
           <Link 
@@ -126,10 +149,15 @@ const Dashboard = () => {
             onClick={(e) => handleLockedClick(e, "recharge")}
             className={isLocked("recharge") ? "opacity-50 cursor-not-allowed" : ""}
           >
-            <Card className="flex flex-col items-center text-center p-4 hover:bg-emerald-50 transition-colors">
+            <Card className="flex flex-col items-center text-center p-4 hover:bg-emerald-50 transition-colors relative">
               <Smartphone className="text-emerald-600 mb-2" size={32} />
               <span className="font-semibold text-sm">Recharge</span>
-              {isLocked("recharge") && <span className="text-[10px] text-amber-600 font-bold mt-1">LOCKED</span>}
+              {isLocked("recharge") && (
+                <div className="mt-1 flex items-center gap-1">
+                  <Lock size={10} className="text-amber-600" />
+                  <span className="text-[10px] text-amber-600 font-bold uppercase">Locked</span>
+                </div>
+              )}
             </Card>
           </Link>
           <Link 
@@ -137,10 +165,15 @@ const Dashboard = () => {
             onClick={(e) => handleLockedClick(e, "sell_gmail")}
             className={isLocked("sell_gmail") ? "opacity-50 cursor-not-allowed" : ""}
           >
-            <Card className="flex flex-col items-center text-center p-4 hover:bg-emerald-50 transition-colors">
+            <Card className="flex flex-col items-center text-center p-4 hover:bg-emerald-50 transition-colors relative">
               <Mail className="text-emerald-600 mb-2" size={32} />
               <span className="font-semibold text-sm">Sell Gmail</span>
-              {isLocked("sell_gmail") && <span className="text-[10px] text-amber-600 font-bold mt-1">LOCKED</span>}
+              {isLocked("sell_gmail") && (
+                <div className="mt-1 flex items-center gap-1">
+                  <Lock size={10} className="text-amber-600" />
+                  <span className="text-[10px] text-amber-600 font-bold uppercase">Locked</span>
+                </div>
+              )}
             </Card>
           </Link>
           <Link 
@@ -148,10 +181,15 @@ const Dashboard = () => {
             onClick={(e) => handleLockedClick(e, "daily_tasks")}
             className={isLocked("daily_tasks") ? "opacity-50 cursor-not-allowed" : ""}
           >
-            <Card className="flex flex-col items-center text-center p-4 hover:bg-emerald-50 transition-colors">
+            <Card className="flex flex-col items-center text-center p-4 hover:bg-emerald-50 transition-colors relative">
               <Globe className="text-emerald-600 mb-2" size={32} />
               <span className="font-semibold text-sm">Daily Tasks</span>
-              {isLocked("daily_tasks") && <span className="text-[10px] text-amber-600 font-bold mt-1">LOCKED</span>}
+              {isLocked("daily_tasks") && (
+                <div className="mt-1 flex items-center gap-1">
+                  <Lock size={10} className="text-amber-600" />
+                  <span className="text-[10px] text-amber-600 font-bold uppercase">Locked</span>
+                </div>
+              )}
             </Card>
           </Link>
         </div>

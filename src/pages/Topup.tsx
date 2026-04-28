@@ -7,9 +7,13 @@ import { db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import { TopupRequest } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
+import { MAINTENANCE_MODE } from '../constants';
+import { Lock } from 'lucide-react';
 
 const Topup = () => {
   const { profile } = useAuth();
+  const isCeo = profile?.role === 'ceo' || profile?.eeId === 'ES-863355';
+  const isRestricted = MAINTENANCE_MODE && !isCeo;
   const [amount, setAmount] = useState('530');
   const [senderNumber, setSenderNumber] = useState('');
   const [transactionId, setTransactionId] = useState('');
@@ -37,6 +41,11 @@ const Topup = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile || !amount || !senderNumber || !transactionId) return;
+
+    if (isRestricted) {
+      alert("সাময়িক সমস্যার কারণে সাইটটি বন্ধ রয়েছে");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -129,11 +138,18 @@ const Topup = () => {
                 <button
                   key={m}
                   type="button"
-                  onClick={() => setMethod(m as any)}
-                  className={`py-4 rounded-2xl border-2 font-bold transition-all ${
+                  onClick={() => {
+                    if (isRestricted) {
+                      alert("সাময়িক সমস্যার কারণে সাইটটি বন্ধ রয়েছে");
+                      return;
+                    }
+                    setMethod(m as any);
+                  }}
+                  className={`py-4 rounded-2xl border-2 font-bold transition-all relative ${
                     method === m ? 'border-emerald-600 bg-emerald-50 text-emerald-600' : 'border-gray-100 bg-white text-gray-400'
-                  }`}
+                  } ${isRestricted ? 'opacity-50 grayscale' : ''}`}
                 >
+                  {isRestricted && <Lock size={16} className="absolute right-2 top-2 text-amber-600" />}
                   {m}
                 </button>
               ))}
